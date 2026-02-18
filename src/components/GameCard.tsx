@@ -17,34 +17,52 @@ const iconMap: Record<string, React.ElementType> = {
 };
 
 export const GameCard: React.FC<GameCardProps> = ({ game, onClick }) => {
-  const IconComponent = iconMap[game.icon] || Icons.Dices;
+  const MainIcon = iconMap[game.icon] || Icons.Dices;
 
   return (
     <motion.button
       onClick={onClick}
-      whileHover={{ scale: 1.02, y: -4 }}
-      whileTap={{ scale: 0.98 }}
-      className="w-full p-6 rounded-2xl text-left transition-all duration-300 hover:shadow-2xl"
+      whileTap={{ scale: 0.96 }}
+      className="group relative w-full aspect-[4/5] overflow-hidden rounded-2xl p-0 text-left shadow-md border border-white/5"
       style={{
-        background: `linear-gradient(135deg, ${game.themeColor}dd 0%, ${game.themeColor}99 100%)`,
+        background: `linear-gradient(145deg, ${game.themeColor}dd 0%, ${game.themeColor}99 100%)`,
       }}
     >
-      <div className="flex items-start gap-4">
-        <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-          <IconComponent className="w-8 h-8 text-white" strokeWidth={2} />
+      {/* Ícone de Fundo (Mais sutil) */}
+      <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12 transition-transform group-hover:scale-110">
+        <MainIcon size={100} color="white" />
+      </div>
+
+      <div className="relative p-4 flex flex-col h-full z-10">
+        {/* Ícone Pequeno */}
+        <div className="mb-3">
+          <div className="inline-flex p-2 bg-white/20 backdrop-blur-md rounded-lg shadow-sm ring-1 ring-white/20">
+            <MainIcon className="w-5 h-5 text-white" strokeWidth={2.5} />
+          </div>
         </div>
-        <div className="flex-1">
-          <h3 className="text-2xl font-bold text-white mb-1">{game.name}</h3>
-          <p className="text-white/80 text-sm mb-3">{game.description}</p>
-          <div className="flex flex-wrap gap-2">
+        
+        {/* Textos */}
+        <div className="mt-auto">
+          <h3 className="text-lg font-bold text-white leading-tight mb-1 drop-shadow-sm">
+            {game.name}
+          </h3>
+          
+          {/* Tags (Badges) Compactas */}
+          <div className="flex flex-col gap-1 mt-2">
             {game.winningScore && (
-              <span className="px-2 py-1 bg-white/20 rounded-lg text-xs text-white font-medium">
-                Meta: {game.winningScore}
-              </span>
+              <div className="flex items-center gap-1 text-[10px] font-bold text-white/90 bg-black/20 px-2 py-1 rounded-md w-fit">
+                <Icons.Trophy size={10} className="text-yellow-300" />
+                <span>Meta: {game.winningScore}</span>
+              </div>
             )}
-            <span className="px-2 py-1 bg-white/20 rounded-lg text-xs text-white font-medium">
-              {game.victoryCondition === 'lowest_score' ? 'Menor vence' : 'Maior vence'}
-            </span>
+            
+            <div className="flex items-center gap-1 text-[10px] font-bold text-white/90 bg-black/20 px-2 py-1 rounded-md w-fit">
+               {game.victoryCondition === 'lowest_score' ? 
+                 <Icons.ArrowDown size={10} className="text-emerald-300"/> : 
+                 <Icons.ArrowUp size={10} className="text-red-300"/>
+               }
+               <span>{game.victoryCondition === 'lowest_score' ? 'Menor' : 'Maior'}</span>
+            </div>
           </div>
         </div>
       </div>
