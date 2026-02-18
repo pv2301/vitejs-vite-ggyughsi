@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { AppState, GameSession, Player, Tournament } from '../types';
-import { getGameConfig } from '../config/games';
+import type { AppState, GameSession, Player, GameConfig } from '../types';
+import { GAME_CONFIGS, getGameConfig } from '../config/games';
 
+// 1. Interface atualizada com a lista de jogos
 interface GameContextType extends AppState {
+  availableGames: GameConfig[]; 
   startNewSession: (gameId: string, players: Player[]) => void;
   updatePlayerScore: (playerId: string, score: number) => void;
   nextRound: () => void;
@@ -52,12 +54,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const calculatePlayerPosition = (players: Player[], victoryCondition: string): Player[] => {
     const sorted = [...players].sort((a, b) => {
-      if (victoryCondition === 'lowest_score') {
-        return a.totalScore - b.totalScore;
-      }
-      return b.totalScore - a.totalScore;
+      const scoreA = a.totalScore ?? 0;
+      const scoreB = b.totalScore ?? 0;
+      if (victoryCondition === 'lowest_score') return scoreA - scoreB;
+      return scoreB - scoreA;
     });
-
     return sorted.map((player, index) => ({ ...player, position: index + 1 }));
   };
 
@@ -70,135 +71,43 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       status: 'active',
       startedAt: new Date().toISOString(),
     };
-
     setState(prev => ({ ...prev, currentSession: newSession }));
   };
 
   const updatePlayerScore = (playerId: string, score: number) => {
     setState(prev => {
       if (!prev.currentSession) return prev;
-
       const gameConfig = getGameConfig(prev.currentSession.gameId);
       if (!gameConfig) return prev;
 
       const updatedPlayers = prev.currentSession.players.map(player => {
         if (player.id === playerId) {
           const newRoundScores = [...player.roundScores, score];
-          const newTotalScore = newRoundScores.reduce((sum, s) => sum + s, 0);
-          return {
-            ...player,
-            roundScores: newRoundScores,
-            totalScore: newTotalScore,
-          };
+          const newTotal = newRoundScores.reduce((a, b) => a + b, 0);
+          return { ...player, roundScores: newRoundScores, totalScore: newTotal };
         }
         return player;
       });
-
-      const rankedPlayers = calculatePlayerPosition(updatedPlayers, gameConfig.victoryCondition);
-
-      return {
-        ...prev,
-        currentSession: {
-          ...prev.currentSession,
-          players: rankedPlayers,
-        },
-      };
+      return { ...prev, currentSession: { ...prev.currentSession, players: calculatePlayerPosition(updatedPlayers, gameConfig.victoryCondition) } };
     });
   };
 
-  const nextRound = () => {
-    setState(prev => {
-      if (!prev.currentSession) return prev;
-
-      return {
-        ...prev,
-        currentSession: {
-          ...prev.currentSession,
-          currentRound: prev.currentSession.currentRound + 1,
-        },
-      };
-    });
-  };
-
-  const finishSession = () => {
-    setState(prev => {
-      if (!prev.currentSession) return prev;
-
-      const finishedSession: GameSession = {
-        ...prev.currentSession,
-        status: 'finished',
-        finishedAt: new Date().toISOString(),
-      };
-
-      return {
-        ...prev,
-        currentSession: null,
-        gameHistory: [finishedSession, ...prev.gameHistory],
-      };
-    });
-  };
-
-  const clearCurrentSession = () => {
-    setState(prev => ({ ...prev, currentSession: null }));
-  };
-
-  const addSavedPlayer = (player: Omit<Player, 'totalScore' | 'roundScores' | 'position'>) => {
-    setState(prev => ({
-      ...prev,
-      savedPlayers: [...prev.savedPlayers, player],
-    }));
-  };
-
-  const removeSavedPlayer = (playerId: string) => {
-    setState(prev => ({
-      ...prev,
-      savedPlayers: prev.savedPlayers.filter(p => p.id !== playerId),
-    }));
-  };
-
-  const deleteHistorySession = (sessionId: string) => {
-    setState(prev => ({
-      ...prev,
-      gameHistory: prev.gameHistory.filter(s => s.id !== sessionId),
-    }));
-  };
-
-  const toggleDarkMode = () => {
-    setState(prev => ({ ...prev, darkMode: !prev.darkMode }));
-  };
-
-  const createTournament = (name: string, gameId: string) => {
-    const newTournament: Tournament = {
-      id: Date.now().toString(),
-      name,
-      gameId,
-      sessions: [],
-      players: [],
-      createdAt: new Date().toISOString(),
-    };
-
-    setState(prev => ({
-      ...prev,
-      tournaments: [...prev.tournaments, newTournament],
-    }));
-  };
-
-  const addSessionToTournament = (tournamentId: string, sessionId: string) => {
-    setState(prev => ({
-      ...prev,
-      tournaments: prev.tournaments.map(t => {
-        if (t.id === tournamentId) {
-          return { ...t, sessions: [...t.sessions, sessionId] };
-        }
-        return t;
-      }),
-    }));
-  };
+  // Funções auxiliares
+  const nextRound = () => setState(prev => prev.currentSession ? { ...prev, currentSession: { ...prev.currentSession, currentRound: prev.currentSession.currentRound + 1 } } : prev);
+  const finishSession = () => setState(prev => prev.currentSession ? { ...prev, currentSession: null, gameHistory: [{ ...prev.currentSession, status: 'finished', finishedAt: new Date().toISOString() }, ...prev.gameHistory] } : prev);
+  const clearCurrentSession = () => setState(prev => ({ ...prev, currentSession: null }));
+  const addSavedPlayer = (p: any) => setState(prev => ({ ...prev, savedPlayers: [...prev.savedPlayers, p] }));
+  const removeSavedPlayer = (id: string) => setState(prev => ({ ...prev, savedPlayers: prev.savedPlayers.filter(p => p.id !== id) }));
+  const deleteHistorySession = (id: string) => setState(prev => ({ ...prev, gameHistory: prev.gameHistory.filter(s => s.id !== id) }));
+  const toggleDarkMode = () => setState(prev => ({ ...prev, darkMode: !prev.darkMode }));
+  const createTournament = (name: string, gameId: string) => setState(prev => ({ ...prev, tournaments: [...prev.tournaments, { id: Date.now().toString(), name, gameId, sessions: [], players: [], createdAt: new Date().toISOString() }] }));
+  const addSessionToTournament = (tId: string, sId: string) => setState(prev => ({ ...prev, tournaments: prev.tournaments.map(t => t.id === tId ? { ...t, sessions: [...t.sessions, sId] } : t) }));
 
   return (
     <GameContext.Provider
       value={{
         ...state,
+        availableGames: GAME_CONFIGS, // <--- AQUI ESTÁ A CHAVE PARA O LAYOUT NOVO FUNCIONAR
         startNewSession,
         updatePlayerScore,
         nextRound,
@@ -219,8 +128,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 export const useGame = () => {
   const context = useContext(GameContext);
-  if (!context) {
-    throw new Error('useGame must be used within a GameProvider');
-  }
+  if (!context) throw new Error('useGame must be used within a GameProvider');
   return context;
 };
