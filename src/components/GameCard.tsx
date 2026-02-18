@@ -16,56 +16,104 @@ const iconMap: Record<string, React.ElementType> = {
   dices: Icons.Dices,
 };
 
+// Texto de subtítulo descritivo para cada jogo
+const subtitleMap: Record<string, string> = {
+  skyjo: 'Descarte e fique com menos pontos',
+  take6: 'Evite pegar fileiras de bois',
+  uno: 'Descarte todas as suas cartas',
+  catan: 'Construa e expanda seu império',
+  generic: 'Pontuação personalizada',
+};
+
 export const GameCard: React.FC<GameCardProps> = ({ game, onClick }) => {
   const MainIcon = iconMap[game.icon] || Icons.Dices;
+  const subtitle = subtitleMap[game.id] || 'Jogue com seus amigos';
+
+  const victoryText =
+    game.victoryCondition === 'lowest_score'
+      ? 'Menor pontuação vence'
+      : 'Maior pontuação vence';
 
   return (
     <motion.button
       onClick={onClick}
-      whileTap={{ scale: 0.96 }}
-      className="group relative w-full aspect-[4/5] overflow-hidden rounded-2xl p-0 text-left shadow-md border border-white/5"
+      whileTap={{ scale: 0.97 }}
       style={{
-        background: `linear-gradient(145deg, ${game.themeColor}dd 0%, ${game.themeColor}99 100%)`,
+        width: '100%',
+        height: '92px',           /* altura fixa → todos os cards iguais */
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        padding: '0 20px',
+        borderRadius: '16px',
+        border: `3px solid ${game.themeColor}`,
+        background: `linear-gradient(135deg, ${game.themeColor}22 0%, ${game.themeColor}0d 100%)`,
+        cursor: 'pointer',
+        textAlign: 'left',
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: `0 4px 20px ${game.themeColor}33`,
+        boxSizing: 'border-box',
       }}
     >
-      {/* Ícone de Fundo (Mais sutil) */}
-      <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12 transition-transform group-hover:scale-110">
-        <MainIcon size={100} color="white" />
+      {/* Brilho sutil no topo */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: '50%',
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Ícone — tamanho fixo */}
+      <div style={{
+        width: '60px', height: '60px', borderRadius: '14px', flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        backgroundColor: game.themeColor,
+        boxShadow: `0 4px 12px ${game.themeColor}55`,
+      }}>
+        <MainIcon style={{ width: '32px', height: '32px', color: 'white' }} strokeWidth={2} />
       </div>
 
-      <div className="relative p-4 flex flex-col h-full z-10">
-        {/* Ícone Pequeno */}
-        <div className="mb-3">
-          <div className="inline-flex p-2 bg-white/20 backdrop-blur-md rounded-lg shadow-sm ring-1 ring-white/20">
-            <MainIcon className="w-5 h-5 text-white" strokeWidth={2.5} />
-          </div>
+      {/* Texto — bloco de largura fixa */}
+      <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+        {/* Nome */}
+        <div style={{
+          fontSize: '19px', fontWeight: 900, color: 'white',
+          letterSpacing: '-0.01em', lineHeight: 1,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {game.name.toUpperCase()}
         </div>
-        
-        {/* Textos */}
-        <div className="mt-auto">
-          <h3 className="text-lg font-bold text-white leading-tight mb-1 drop-shadow-sm">
-            {game.name}
-          </h3>
-          
-          {/* Tags (Badges) Compactas */}
-          <div className="flex flex-col gap-1 mt-2">
-            {game.winningScore && (
-              <div className="flex items-center gap-1 text-[10px] font-bold text-white/90 bg-black/20 px-2 py-1 rounded-md w-fit">
-                <Icons.Trophy size={10} className="text-yellow-300" />
-                <span>Meta: {game.winningScore}</span>
-              </div>
-            )}
-            
-            <div className="flex items-center gap-1 text-[10px] font-bold text-white/90 bg-black/20 px-2 py-1 rounded-md w-fit">
-               {game.victoryCondition === 'lowest_score' ? 
-                 <Icons.ArrowDown size={10} className="text-emerald-300"/> : 
-                 <Icons.ArrowUp size={10} className="text-red-300"/>
-               }
-               <span>{game.victoryCondition === 'lowest_score' ? 'Menor' : 'Maior'}</span>
-            </div>
-          </div>
+        {/* Subtítulo */}
+        <div style={{
+          fontSize: '12px', color: 'rgba(255,255,255,0.55)', marginTop: '4px',
+          fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {subtitle}
+        </div>
+        {/* Badges — linha única, não quebra */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', flexWrap: 'nowrap' }}>
+          {game.winningScore && (
+            <span style={{
+              fontSize: '11px', fontWeight: 700, color: game.themeColor,
+              background: `${game.themeColor}25`, padding: '2px 8px',
+              borderRadius: '999px', border: `1px solid ${game.themeColor}55`,
+              whiteSpace: 'nowrap', flexShrink: 0,
+            }}>
+              Meta {game.winningScore}pts
+            </span>
+          )}
+          <span style={{
+            fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.4)',
+            background: 'rgba(255,255,255,0.07)', padding: '2px 8px',
+            borderRadius: '999px', whiteSpace: 'nowrap', flexShrink: 0,
+          }}>
+            {victoryText}
+          </span>
         </div>
       </div>
+
+      {/* Seta */}
+      <Icons.ChevronRight style={{ width: '18px', height: '18px', color: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
     </motion.button>
   );
 };

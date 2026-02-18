@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useGame } from '../context/GameContext';
+import { History, Trophy } from 'lucide-react';
 import { GameCard } from '../components/GameCard';
-import { History, Trophy, Plus } from 'lucide-react';
+import { GAME_CONFIGS } from '../config/games';
+import { useGame } from '../context/GameContext';
 
 interface DashboardProps {
   onSelectGame: (gameId: string) => void;
@@ -10,74 +11,111 @@ interface DashboardProps {
   onOpenTournaments: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ 
-  onSelectGame, 
-  onOpenHistory, 
-  onOpenTournaments 
+export const Dashboard: React.FC<DashboardProps> = ({
+  onSelectGame,
+  onOpenHistory,
+  onOpenTournaments,
 }) => {
-  const { availableGames } = useGame();
-
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.05 }
-    }
-  };
-
-  const item = {
-    hidden: { opacity: 0, scale: 0.9 },
-    show: { opacity: 1, scale: 1 }
-  };
+  const { gameHistory } = useGame();
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-3 pb-20 overflow-x-hidden">
-      {/* Header Compacto */}
-      <header className="flex justify-between items-center mb-5 px-1">
-        <div>
-          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            ScoreMaster
-          </h1>
-          <p className="text-slate-400 text-[10px] font-medium uppercase tracking-wider">
-            Selecione o jogo
-          </p>
-        </div>
-        
-        <div className="flex gap-2">
-          <button onClick={onOpenHistory} className="p-2 bg-slate-800/80 rounded-lg border border-slate-700/50 active:scale-95 transition-transform">
-            <History className="w-4 h-4 text-slate-300" />
-          </button>
-          <button onClick={onOpenTournaments} className="p-2 bg-slate-800/80 rounded-lg border border-slate-700/50 active:scale-95 transition-transform">
-            <Trophy className="w-4 h-4 text-slate-300" />
-          </button>
-        </div>
-      </header>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
+        display: 'flex',
+        flexDirection: 'column',
+        paddingTop: 'max(24px, env(safe-area-inset-top, 24px))',
+        paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
+      }}
+    >
+      {/* ── Header ── */}
+      <div style={{ padding: '0 20px 8px' }}>
+        {/* Topo: app name + ações */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <div>
+            <motion.div
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{ fontSize: '32px', fontWeight: 900, color: 'white', letterSpacing: '-0.02em', lineHeight: 1 }}
+            >
+              ScoreMaster
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              style={{ fontSize: '14px', color: '#64748b', marginTop: '4px', fontWeight: 500 }}
+            >
+              Escolha seu jogo
+            </motion.div>
+          </div>
 
-      {/* GRADE FORÇADA: 2 Colunas */}
-      <motion.div 
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="grid grid-cols-2 gap-2 w-full"
-      >
-        {availableGames.map((game) => (
-          <motion.div key={game.id} variants={item} className="w-full">
+          {/* Botões de ação */}
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <motion.button
+              whileTap={{ scale: 0.92 }}
+              onClick={onOpenTournaments}
+              style={{
+                width: '72px', height: '52px', borderRadius: '14px', border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer',
+                background: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative',
+              }}
+            >
+              <Trophy style={{ width: '24px', height: '24px', color: '#f59e0b' }} />
+            </motion.button>
+
+            <motion.button
+              whileTap={{ scale: 0.92 }}
+              onClick={onOpenHistory}
+              style={{
+                width: '72px', height: '52px', borderRadius: '14px', border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer',
+                background: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative',
+              }}
+            >
+              <History style={{ width: '24px', height: '24px', color: '#60a5fa' }} />
+              {gameHistory.length > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  style={{
+                    position: 'absolute', top: '-4px', right: '-4px',
+                    minWidth: '18px', height: '18px', padding: '0 4px',
+                    background: '#ef4444', borderRadius: '999px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '10px', color: 'white', fontWeight: 700,
+                  }}
+                >
+                  {gameHistory.length > 9 ? '9+' : gameHistory.length}
+                </motion.span>
+              )}
+            </motion.button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Divisor ── */}
+      <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '12px 0' }} />
+
+      {/* ── Lista de jogos ── */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {GAME_CONFIGS.map((game, index) => (
+          <motion.div
+            key={game.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.07 }}
+          >
             <GameCard game={game} onClick={() => onSelectGame(game.id)} />
           </motion.div>
         ))}
+      </div>
 
-        {/* Botão Novo Jogo */}
-        <motion.button
-          variants={item}
-          whileTap={{ scale: 0.95 }}
-          className="flex flex-col items-center justify-center w-full aspect-square border border-dashed border-slate-800 rounded-xl text-slate-600 bg-slate-900/30 gap-1 hover:bg-slate-900 hover:text-slate-400 transition-colors"
-        >
-          <div className="p-2 bg-slate-800 rounded-full mb-1">
-            <Plus className="w-4 h-4" />
-          </div>
-          <span className="text-[10px] font-bold uppercase tracking-wide">Criar</span>
-        </motion.button>
-      </motion.div>
+      {/* ── Footer ── */}
+      <div style={{ textAlign: 'center', padding: '16px', color: '#334155', fontSize: '12px' }}>
+        Desenvolvido por PV
+      </div>
     </div>
   );
 };

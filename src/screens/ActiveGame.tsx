@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, X, AlertCircle } from 'lucide-react';
+import { Trophy, X, AlertCircle, Share2 } from 'lucide-react';
 import { PlayerRow } from '../components/PlayerRow';
+import { ShareModal } from '../components/ShareModal';
 import { getGameConfig } from '../config/games';
 import { useGame } from '../context/GameContext';
 
@@ -13,6 +14,7 @@ interface ActiveGameProps {
 export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
   const { currentSession, updatePlayerScore, nextRound, finishSession } = useGame();
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   if (!currentSession) {
     return null;
@@ -72,12 +74,20 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
               Rodada {currentSession.currentRound} • {currentSession.players.length} jogadores
             </p>
           </div>
-          <button
-            onClick={() => setShowQuitConfirm(true)}
-            className="p-3 bg-red-500/20 hover:bg-red-500/30 rounded-xl transition-colors"
-          >
-            <X className="w-6 h-6 text-red-400" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="p-3 bg-blue-500/20 hover:bg-blue-500/30 rounded-xl transition-colors"
+            >
+              <Share2 className="w-6 h-6 text-blue-400" />
+            </button>
+            <button
+              onClick={() => setShowQuitConfirm(true)}
+              className="p-3 bg-red-500/20 hover:bg-red-500/30 rounded-xl transition-colors"
+            >
+              <X className="w-6 h-6 text-red-400" />
+            </button>
+          </div>
         </div>
 
         {winConditionMet && (
@@ -112,7 +122,10 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
           </AnimatePresence>
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent">
+        <div
+          className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent"
+          style={{ padding: '16px 16px max(20px, env(safe-area-inset-bottom, 20px))' }}
+        >
           <div className="max-w-4xl mx-auto flex gap-3">
             {allPlayersScored && (
               <motion.button
@@ -121,7 +134,7 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleNextRound}
-                className="flex-1 p-4 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-white text-lg transition-colors"
+                className="flex-1 py-5 bg-slate-700 hover:bg-slate-600 rounded-2xl font-bold text-white text-lg transition-colors"
               >
                 Próxima Rodada
               </motion.button>
@@ -133,7 +146,7 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleFinishGame}
-              className="flex-1 p-4 rounded-xl font-bold text-white text-lg transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-5 rounded-2xl font-bold text-white text-lg transition-colors flex items-center justify-center gap-2"
               style={{ backgroundColor: gameConfig.themeColor }}
             >
               <Trophy className="w-6 h-6" />
@@ -142,6 +155,16 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
           </div>
         </div>
       </motion.div>
+
+      {showShareModal && currentSession && (
+        <ShareModal
+          sessionId={currentSession.id}
+          gameName={gameConfig.name}
+          themeColor={gameConfig.themeColor}
+          onClose={() => setShowShareModal(false)}
+          onConfirmStart={() => setShowShareModal(false)}
+        />
+      )}
 
       <AnimatePresence>
         {showQuitConfirm && (

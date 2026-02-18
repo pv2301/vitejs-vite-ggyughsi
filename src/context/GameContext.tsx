@@ -6,7 +6,7 @@ import { GAME_CONFIGS, getGameConfig } from '../config/games';
 // 1. Interface atualizada com a lista de jogos
 interface GameContextType extends AppState {
   availableGames: GameConfig[]; 
-  startNewSession: (gameId: string, players: Player[]) => void;
+  startNewSession: (gameId: string, players: Player[], sessionId?: string) => void;
   updatePlayerScore: (playerId: string, score: number) => void;
   nextRound: () => void;
   finishSession: () => void;
@@ -62,9 +62,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return sorted.map((player, index) => ({ ...player, position: index + 1 }));
   };
 
-  const startNewSession = (gameId: string, players: Player[]) => {
+  const startNewSession = (gameId: string, players: Player[], sessionId?: string) => {
     const newSession: GameSession = {
-      id: Date.now().toString(),
+      id: sessionId ?? Date.now().toString(),
       gameId,
       players: players.map(p => ({ ...p, totalScore: 0, roundScores: [], position: 1 })),
       currentRound: 1,

@@ -56,3 +56,23 @@ html:not(.dark) body {
   background: linear-gradient(135deg, #e0f2fe 0%, #f1f5f9 100%);
   color: #0f172a;
 }
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Grid 2 colunas garantido independente do Tailwind */
+.game-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+.game-grid > * {
+  min-width: 0 !important;
+  width: 100% !important;
+}

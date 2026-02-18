@@ -82,12 +82,12 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Pontos da rodada"
-            className="flex-1 px-4 py-2 bg-slate-700 text-white rounded-lg border-2 border-slate-600 focus:border-blue-500 focus:outline-none transition-colors"
+            className="flex-1 px-4 py-4 bg-slate-700 text-white text-lg font-bold rounded-xl border-2 border-slate-600 focus:border-blue-500 focus:outline-none transition-colors"
           />
           <button
             onClick={handleSubmit}
             disabled={!inputValue}
-            className="px-6 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+            className="min-w-[56px] px-6 py-4 rounded-xl font-black text-white text-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
             style={{ backgroundColor: themeColor }}
           >
             +

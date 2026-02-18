@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus } from 'lucide-react';
+import { Plus, X, UserPlus } from 'lucide-react';
 import type { Player } from '../types';
 
 interface PlayerSelectorProps {
@@ -11,8 +11,8 @@ interface PlayerSelectorProps {
   themeColor: string;
 }
 
-const AVATARS = ['🎮', '🎲', '🎯', '🎪', '🎨', '🎭', '🎸', '🎤', '🎧', '🎬', '⚡', '🔥', '⭐', '💎', '🏆'];
-const COLORS = ['#ef4444', '#f97316', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4'];
+const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+const AVATARS = ['🎲', '🎮', '👾', '🎯', '🎨', '🎪', '🎭', '🦁'];
 
 export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
   selectedPlayers,
@@ -21,169 +21,231 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
   onRemovePlayer,
   themeColor,
 }) => {
-  const [showNewPlayerForm, setShowNewPlayerForm] = useState(false);
-  const [newPlayerName, setNewPlayerName] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0]);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newName, setNewName] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
+  const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0]);
 
-  const handleCreatePlayer = () => {
-    if (!newPlayerName.trim()) return;
-
-    const newPlayer = {
+  const handleAdd = () => {
+    if (!newName.trim()) return;
+    onAddPlayer({
       id: Date.now().toString(),
-      name: newPlayerName.trim(),
-      avatar: selectedAvatar,
+      name: newName.trim(),
       color: selectedColor,
-    };
-
-    onAddPlayer(newPlayer);
-    setNewPlayerName('');
-    setShowNewPlayerForm(false);
+      avatar: selectedAvatar,
+    });
+    setNewName('');
+    setSelectedColor(COLORS[0]);
+    setSelectedAvatar(AVATARS[0]);
+    setIsAdding(false);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleAdd();
+    if (e.key === 'Escape') setIsAdding(false);
+  };
+
+  const availableSaved = savedPlayers.filter(
+    sp => !selectedPlayers.find(p => p.id === sp.id)
+  );
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-white">Jogadores Selecionados</h3>
-        <span className="text-sm text-slate-400">{selectedPlayers.length} jogadores</span>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-      <div className="space-y-2">
-        <AnimatePresence>
-          {selectedPlayers.map((player) => (
-            <motion.div
-              key={player.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="flex items-center gap-3 p-3 bg-slate-800 rounded-lg"
-            >
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold"
-                style={{ backgroundColor: player.color }}
-              >
-                {player.avatar}
-              </div>
-              <span className="flex-1 text-white font-medium">{player.name}</span>
-              <button
-                onClick={() => onRemovePlayer(player.id)}
-                className="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
-              >
-                <X className="w-4 h-4 text-red-400" />
-              </button>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-
-      {savedPlayers.length > 0 && (
-        <div className="mt-6">
-          <h3 className="text-lg font-bold text-white mb-3">Jogadores Salvos</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {savedPlayers
-              .filter((sp) => !selectedPlayers.find((p) => p.id === sp.id))
-              .map((player) => (
-                <motion.button
-                  key={player.id}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => onAddPlayer(player)}
-                  className="flex items-center gap-2 p-2 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors"
-                >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm"
-                    style={{ backgroundColor: player.color }}
-                  >
-                    {player.avatar}
-                  </div>
-                  <span className="text-white text-sm font-medium">{player.name}</span>
-                </motion.button>
-              ))}
-          </div>
-        </div>
-      )}
-
-      <div className="mt-6">
-        {!showNewPlayerForm ? (
-          <button
-            onClick={() => setShowNewPlayerForm(true)}
-            className="w-full p-4 border-2 border-dashed border-slate-600 rounded-xl hover:border-slate-500 transition-colors text-slate-400 hover:text-slate-300 flex items-center justify-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Adicionar Novo Jogador</span>
-          </button>
-        ) : (
+      {/* Lista de jogadores selecionados */}
+      <AnimatePresence>
+        {selectedPlayers.map((player) => (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-4 bg-slate-800 rounded-xl space-y-4"
+            key={player.id}
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(15,23,42,0.6)', borderRadius: '16px', padding: '16px', border: '1px solid #334155' }}
           >
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Nome</label>
-              <input
-                type="text"
-                value={newPlayerName}
-                onChange={(e) => setNewPlayerName(e.target.value)}
-                placeholder="Digite o nome"
-                className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border-2 border-slate-600 focus:border-blue-500 focus:outline-none"
-                autoFocus
-              />
+            {/* Avatar com borda colorida */}
+            <div
+              style={{
+                width: '56px', height: '56px', borderRadius: '16px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '24px', flexShrink: 0, boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                backgroundColor: `${player.color}33`,
+                border: `3px solid ${player.color}`,
+              }}
+            >
+              {player.avatar}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Avatar</label>
-              <div className="grid grid-cols-8 gap-2">
-                {AVATARS.map((avatar) => (
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontWeight: 900, color: 'white', fontSize: '18px', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{player.name}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: player.color }} />
+                <span style={{ color: '#64748b', fontSize: '14px' }}>{player.avatar}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => onRemovePlayer(player.id)}
+              style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(239,68,68,0.1)', borderRadius: '12px', border: 'none', cursor: 'pointer' }}
+            >
+              <X style={{ width: '20px', height: '20px', color: '#f87171' }} />
+            </button>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      {/* Formulário ou botões */}
+      <AnimatePresence mode="wait">
+        {!isAdding ? (
+          <motion.div
+            key="buttons"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
+          >
+            {/* Chips de jogadores salvos */}
+            {availableSaved.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {availableSaved.map(player => (
                   <button
-                    key={avatar}
-                    onClick={() => setSelectedAvatar(avatar)}
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all ${
-                      selectedAvatar === avatar
-                        ? 'bg-blue-500 scale-110'
-                        : 'bg-slate-700 hover:bg-slate-600'
-                    }`}
+                    key={player.id}
+                    onClick={() => onAddPlayer(player)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'rgba(15,23,42,0.6)', borderRadius: '999px', border: '1px solid #334155', cursor: 'pointer' }}
                   >
-                    {avatar}
+                    <div
+                      style={{
+                        width: '28px', height: '28px', borderRadius: '50%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px',
+                        backgroundColor: `${player.color}44`,
+                        border: `2px solid ${player.color}`,
+                      }}
+                    >
+                      {player.avatar}
+                    </div>
+                    <span style={{ fontSize: '15px', fontWeight: 700, color: '#cbd5e1' }}>{player.name}</span>
+                    <Plus style={{ width: '14px', height: '14px', color: '#64748b' }} />
                   </button>
                 ))}
               </div>
-            </div>
+            )}
 
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Cor</label>
-              <div className="grid grid-cols-8 gap-2">
-                {COLORS.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setSelectedColor(color)}
-                    className={`w-10 h-10 rounded-lg transition-all ${
-                      selectedColor === color ? 'scale-110 ring-2 ring-white' : ''
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
+            {/* Botão adicionar novo */}
+            <button
+              onClick={() => setIsAdding(true)}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '20px', borderRadius: '16px', border: '2px dashed #475569', color: '#94a3b8', fontWeight: 700, fontSize: '17px', background: 'transparent', cursor: 'pointer' }}
+            >
+              <UserPlus style={{ width: '24px', height: '24px' }} />
+              Adicionar Novo Jogador
+            </button>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="form"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            style={{ background: '#0f172a', borderRadius: '24px', border: '1px solid #334155', overflow: 'hidden' }}
+          >
+            {/* Header com preview ao vivo */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #1e293b' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '48px', height: '48px', borderRadius: '12px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px',
+                    backgroundColor: `${selectedColor}33`,
+                    border: `3px solid ${selectedColor}`,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {selectedAvatar}
+                </div>
+                <span style={{ fontWeight: 900, color: 'white', fontSize: '18px' }}>Novo Jogador</span>
               </div>
+              <button
+                onClick={() => setIsAdding(false)}
+                style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e293b', borderRadius: '12px', border: 'none', cursor: 'pointer' }}
+              >
+                <X style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
+              </button>
             </div>
 
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setShowNewPlayerForm(false)}
-                className="flex-1 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Input nome */}
+              <input
+                autoFocus
+                type="text"
+                placeholder="Nome do Jogador"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={handleKeyDown}
+                style={{
+                  width: '100%', background: '#1e293b', borderRadius: '16px',
+                  padding: '16px 20px', fontSize: '20px', color: 'white', fontWeight: 700,
+                  outline: 'none', boxSizing: 'border-box',
+                  border: `2px solid ${newName.trim() ? selectedColor : '#334155'}`,
+                  transition: 'border-color 0.2s',
+                }}
+              />
+
+              {/* Seleção de avatar */}
+              <div>
+                <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Avatar</p>
+                <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+                  {AVATARS.map(avatar => (
+                    <button
+                      key={avatar}
+                      onClick={() => setSelectedAvatar(avatar)}
+                      style={{
+                        width: '48px', height: '48px', borderRadius: '12px', fontSize: '24px', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer',
+                        backgroundColor: selectedAvatar === avatar ? `${selectedColor}44` : '#1e293b',
+                        outline: selectedAvatar === avatar ? `3px solid ${selectedColor}` : '3px solid transparent',
+                        outlineOffset: '2px',
+                        transform: selectedAvatar === avatar ? 'scale(1.12)' : 'scale(1)',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      {avatar}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Seleção de cor */}
+              <div>
+                <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Cor</p>
+                <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+                  {COLORS.map(color => (
+                    <button
+                      key={color}
+                      onClick={() => setSelectedColor(color)}
+                      style={{
+                        width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
+                        backgroundColor: color, border: 'none', cursor: 'pointer',
+                        outline: selectedColor === color ? '3px solid white' : '3px solid transparent',
+                        outlineOffset: '3px',
+                        transform: selectedColor === color ? 'scale(1.15)' : 'scale(1)',
+                        transition: 'all 0.2s',
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Botão confirmar */}
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={handleAdd}
+                disabled={!newName.trim()}
+                style={{ width: '100%', padding: '20px', borderRadius: '16px', fontWeight: 900, color: 'white', fontSize: '20px', backgroundColor: selectedColor, border: 'none', cursor: 'pointer', opacity: newName.trim() ? 1 : 0.4 }}
               >
-                Cancelar
-              </button>
-              <button
-                onClick={handleCreatePlayer}
-                disabled={!newPlayerName.trim()}
-                className="flex-1 px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ backgroundColor: themeColor }}
-              >
-                Adicionar
-              </button>
+                CONFIRMAR
+              </motion.button>
             </div>
           </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 };
