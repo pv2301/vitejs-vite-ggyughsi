@@ -30,9 +30,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }}
     >
       {/* ── Header ── */}
-      <div style={{ padding: '0 20px 8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-          <div>
+      <div style={{ padding: '0 16px 8px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '12px' }}>
+          <div style={{ paddingBottom: '4px' }}>
             <motion.div
               initial={{ opacity: 0, y: -12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -51,7 +51,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Botões de ação */}
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
             {/* Tema */}
             <motion.button
               whileTap={{ scale: 0.92 }}
@@ -135,7 +135,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* ── Footer ── */}
       <div style={{ textAlign: 'center', padding: '16px', color: '#334155', fontSize: '12px' }}>
-        Desenvolvido por PVGames
+        Desenvolvido por PV
       </div>
     </div>
   );
