@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, UserPlus, Pencil, Check } from 'lucide-react';
+import { Plus, X, UserPlus, Pencil, Check, Trash2 } from 'lucide-react';
 import type { Player } from '../types';
 import { useGame } from '../context/GameContext';
 
@@ -15,6 +15,8 @@ interface PlayerSelectorProps {
 const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 const AVATARS = ['🎲', '🎮', '👾', '🎯', '🎨', '🎪', '🎭', '🦁'];
 
+type EditMode = { id: string; name: string; color: string; avatar: string } | null;
+
 export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
   selectedPlayers,
   savedPlayers,
@@ -22,14 +24,12 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
   onRemovePlayer,
   themeColor,
 }) => {
-  const { renameSavedPlayer } = useGame();
+  const { renameSavedPlayer, removeSavedPlayer } = useGame();
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0]);
-  // Estado de edição: id do jogador salvo sendo editado
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState('');
+  const [editMode, setEditMode] = useState<EditMode>(null);
 
   const handleAdd = () => {
     if (!newName.trim()) return;
@@ -51,26 +51,141 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
   };
 
   const startEdit = (player: Omit<Player, 'totalScore' | 'roundScores' | 'position'>) => {
-    setEditingId(player.id);
-    setEditingName(player.name);
+    setEditMode({ id: player.id, name: player.name, color: player.color, avatar: player.avatar });
   };
 
   const confirmEdit = () => {
-    if (editingId && editingName.trim()) {
-      renameSavedPlayer(editingId, editingName.trim());
-    }
-    setEditingId(null);
-    setEditingName('');
+    if (!editMode || !editMode.name.trim()) return;
+    // Atualiza nome (já salva cor/avatar via update completo no context)
+    renameSavedPlayer(editMode.id, editMode.name.trim());
+    setEditMode(null);
   };
 
-  const handleEditKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') confirmEdit();
-    if (e.key === 'Escape') { setEditingId(null); setEditingName(''); }
+  const handleDelete = (playerId: string) => {
+    removeSavedPlayer(playerId);
   };
 
   const availableSaved = savedPlayers.filter(
     sp => !selectedPlayers.find(p => p.id === sp.id)
   );
+
+  // Painel de edição completo (nome + avatar + cor)
+  if (editMode) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{ background: '#0f172a', borderRadius: '24px', border: '1px solid #334155', overflow: 'hidden' }}
+      >
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 20px', borderBottom: '1px solid #1e293b',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '48px', height: '48px', borderRadius: '12px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px',
+              backgroundColor: `${editMode.color}33`, border: `3px solid ${editMode.color}`, transition: 'all 0.2s',
+            }}>
+              {editMode.avatar}
+            </div>
+            <span style={{ fontWeight: 900, color: 'white', fontSize: '18px' }}>Editar Jogador</span>
+          </div>
+          <button
+            onClick={() => setEditMode(null)}
+            style={{
+              width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: '#1e293b', borderRadius: '12px', border: 'none', cursor: 'pointer',
+            }}
+          >
+            <X style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
+          </button>
+        </div>
+
+        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Nome */}
+          <input
+            autoFocus
+            type="text"
+            placeholder="Nome do Jogador"
+            value={editMode.name}
+            onChange={(e) => setEditMode(m => m ? { ...m, name: e.target.value } : m)}
+            onKeyDown={(e) => { if (e.key === 'Enter') confirmEdit(); if (e.key === 'Escape') setEditMode(null); }}
+            style={{
+              width: '100%', background: '#1e293b', borderRadius: '16px',
+              padding: '16px 20px', fontSize: '20px', color: 'white', fontWeight: 700,
+              outline: 'none', boxSizing: 'border-box',
+              border: `2px solid ${editMode.name.trim() ? editMode.color : '#334155'}`,
+              transition: 'border-color 0.2s',
+            }}
+          />
+
+          {/* Avatar */}
+          <div>
+            <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Avatar</p>
+            <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+              {AVATARS.map(avatar => (
+                <button
+                  key={avatar}
+                  onClick={() => setEditMode(m => m ? { ...m, avatar } : m)}
+                  style={{
+                    width: '48px', height: '48px', borderRadius: '12px', fontSize: '24px', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: 'none', cursor: 'pointer',
+                    backgroundColor: editMode.avatar === avatar ? `${editMode.color}44` : '#1e293b',
+                    outline: editMode.avatar === avatar ? `3px solid ${editMode.color}` : '3px solid transparent',
+                    outlineOffset: '2px',
+                    transform: editMode.avatar === avatar ? 'scale(1.12)' : 'scale(1)',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {avatar}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Cor */}
+          <div>
+            <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Cor</p>
+            <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+              {COLORS.map(color => (
+                <button
+                  key={color}
+                  onClick={() => setEditMode(m => m ? { ...m, color } : m)}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
+                    backgroundColor: color, border: 'none', cursor: 'pointer',
+                    outline: editMode.color === color ? '3px solid white' : '3px solid transparent',
+                    outlineOffset: '3px',
+                    transform: editMode.color === color ? 'scale(1.15)' : 'scale(1)',
+                    transition: 'all 0.2s',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={confirmEdit}
+            disabled={!editMode.name.trim()}
+            style={{
+              width: '100%', padding: '20px', borderRadius: '16px',
+              fontWeight: 900, color: 'white', fontSize: '20px',
+              backgroundColor: editMode.color, border: 'none', cursor: 'pointer',
+              opacity: editMode.name.trim() ? 1 : 0.4,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+            }}
+          >
+            <Check style={{ width: '22px', height: '22px' }} />
+            SALVAR
+          </motion.button>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -115,7 +230,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
         ))}
       </AnimatePresence>
 
-      {/* Formulário ou botões */}
+      {/* Formulário ou lista */}
       <AnimatePresence mode="wait">
         {!isAdding ? (
           <motion.div
@@ -125,12 +240,16 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
             exit={{ opacity: 0 }}
             style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
           >
-            {/* Chips de jogadores salvos com edição */}
+            {/* Jogadores salvos */}
             {availableSaved.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {availableSaved.map(player => (
-                  <div
+                  <motion.div
                     key={player.id}
+                    layout
+                    initial={{ opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -12 }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '10px',
                       background: 'rgba(15,23,42,0.6)', borderRadius: '14px',
@@ -139,78 +258,61 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
                   >
                     {/* Avatar */}
                     <div style={{
-                      width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
+                      width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '18px', backgroundColor: `${player.color}44`,
+                      fontSize: '20px', backgroundColor: `${player.color}44`,
                       border: `2px solid ${player.color}`,
                     }}>
                       {player.avatar}
                     </div>
 
-                    {/* Nome ou input de edição */}
-                    {editingId === player.id ? (
-                      <input
-                        autoFocus
-                        value={editingName}
-                        onChange={(e) => setEditingName(e.target.value)}
-                        onKeyDown={handleEditKeyDown}
-                        style={{
-                          flex: 1, background: '#1e293b', border: `2px solid ${player.color}`,
-                          borderRadius: '8px', padding: '6px 10px',
-                          color: 'white', fontSize: '16px', fontWeight: 700, outline: 'none',
-                        }}
-                      />
-                    ) : (
-                      <span style={{ flex: 1, fontSize: '16px', fontWeight: 700, color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {player.name}
-                      </span>
-                    )}
+                    {/* Nome */}
+                    <span style={{ flex: 1, fontSize: '16px', fontWeight: 700, color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {player.name}
+                    </span>
 
-                    {/* Botão editar/confirmar */}
-                    {editingId === player.id ? (
-                      <button
-                        onClick={confirmEdit}
-                        style={{
-                          width: '36px', height: '36px', flexShrink: 0,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: `${player.color}33`, borderRadius: '9px', border: 'none', cursor: 'pointer',
-                        }}
-                      >
-                        <Check style={{ width: '18px', height: '18px', color: player.color }} />
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => startEdit(player)}
-                        style={{
-                          width: '36px', height: '36px', flexShrink: 0,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: 'rgba(255,255,255,0.06)', borderRadius: '9px', border: 'none', cursor: 'pointer',
-                        }}
-                      >
-                        <Pencil style={{ width: '15px', height: '15px', color: '#64748b' }} />
-                      </button>
-                    )}
+                    {/* Editar */}
+                    <button
+                      onClick={() => startEdit(player)}
+                      style={{
+                        width: '36px', height: '36px', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'rgba(255,255,255,0.06)', borderRadius: '9px', border: 'none', cursor: 'pointer',
+                      }}
+                    >
+                      <Pencil style={{ width: '15px', height: '15px', color: '#64748b' }} />
+                    </button>
 
-                    {/* Botão adicionar à partida */}
-                    {editingId !== player.id && (
-                      <button
-                        onClick={() => onAddPlayer(player)}
-                        style={{
-                          width: '36px', height: '36px', flexShrink: 0,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: `${themeColor}22`, borderRadius: '9px', border: `1.5px solid ${themeColor}55`,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <Plus style={{ width: '18px', height: '18px', color: themeColor }} />
-                      </button>
-                    )}
-                  </div>
+                    {/* Deletar */}
+                    <button
+                      onClick={() => handleDelete(player.id)}
+                      style={{
+                        width: '36px', height: '36px', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'rgba(239,68,68,0.1)', borderRadius: '9px', border: 'none', cursor: 'pointer',
+                      }}
+                    >
+                      <Trash2 style={{ width: '15px', height: '15px', color: '#f87171' }} />
+                    </button>
+
+                    {/* Adicionar à partida */}
+                    <button
+                      onClick={() => onAddPlayer(player)}
+                      style={{
+                        width: '36px', height: '36px', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: `${themeColor}22`, borderRadius: '9px', border: `1.5px solid ${themeColor}55`,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Plus style={{ width: '18px', height: '18px', color: themeColor }} />
+                    </button>
+                  </motion.div>
                 ))}
               </div>
             )}
 
-            {/* Botão adicionar novo */}
+            {/* Botão novo jogador */}
             <button
               onClick={() => setIsAdding(true)}
               style={{

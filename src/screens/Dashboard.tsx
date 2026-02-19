@@ -38,7 +38,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               animate={{ opacity: 1, y: 0 }}
               style={{ fontSize: '32px', fontWeight: 900, color: 'white', letterSpacing: '-0.02em', lineHeight: 1 }}
             >
-              ScoreMaster
+              ScoreGames
             </motion.div>
             <motion.div
               initial={{ opacity: 0 }}
