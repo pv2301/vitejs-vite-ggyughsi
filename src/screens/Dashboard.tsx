@@ -30,7 +30,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }}
     >
       {/* ── Header ── */}
-      <div style={{ padding: '0 16px 8px' }}>
+      <div style={{ padding: '0 24px 8px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '12px' }}>
           <div style={{ paddingBottom: '4px' }}>
             <motion.div
@@ -51,7 +51,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Botões de ação */}
-          <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: '8px', flexShrink: 0, overflow: 'visible' }}>
             {/* Tema */}
             <motion.button
               whileTap={{ scale: 0.92 }}
