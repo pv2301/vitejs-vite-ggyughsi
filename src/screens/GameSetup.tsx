@@ -1,10 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Play, Share2, ChevronDown, ChevronUp, Camera, Trash2 } from 'lucide-react';
+import { ArrowLeft, Play, ChevronDown, ChevronUp, Camera, Trash2 } from 'lucide-react';
 import { gameIconMap } from './GameEditor';
 import * as Icons from 'lucide-react';
 import { PlayerSelector } from '../components/PlayerSelector';
-import { ShareModal } from '../components/ShareModal';
 import { useGame } from '../context/GameContext';
 import type { Player, VictoryCondition } from '../types';
 
@@ -27,8 +26,6 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
   const { savedPlayers, addSavedPlayer, startNewSession, availableGames, updateGameOverride, updateGameImage, deleteCustomGame } = useGame();
   const [selectedPlayers, setSelectedPlayers] = useState<Omit<Player, 'totalScore' | 'roundScores' | 'position'>[]>([]);
   const [rulesOpen, setRulesOpen] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [pendingSessionId, setPendingSessionId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Estado local para edição de regras (inicializado com config atual)
@@ -87,20 +84,6 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
     saveRules();
     const players: Player[] = selectedPlayers.map(p => ({ ...p, totalScore: 0, roundScores: [] }));
     startNewSession(gameId, players);
-    onStartGame();
-  };
-
-  const handleOpenShare = () => {
-    if (!canStart) return;
-    saveRules();
-    setPendingSessionId(Date.now().toString());
-    setShowShareModal(true);
-  };
-
-  const handleConfirmStart = () => {
-    setShowShareModal(false);
-    const players: Player[] = selectedPlayers.map(p => ({ ...p, totalScore: 0, roundScores: [] }));
-    startNewSession(gameId, players, pendingSessionId!);
     onStartGame();
   };
 
@@ -361,50 +344,24 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
             </span>
           </div>
         )}
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={handleOpenShare}
-            disabled={!canStart}
-            style={{
-              width: '68px', height: '68px', flexShrink: 0, borderRadius: '16px',
-              border: `2.5px solid ${canStart ? gameConfig.themeColor : 'rgba(255,255,255,0.1)'}`,
-              background: canStart ? `${gameConfig.themeColor}22` : 'rgba(255,255,255,0.05)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: canStart ? 'pointer' : 'not-allowed', opacity: canStart ? 1 : 0.35,
-            }}
-          >
-            <Share2 style={{ width: '26px', height: '26px', color: canStart ? gameConfig.themeColor : '#475569' }} />
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={handleStartGame}
-            disabled={!canStart}
-            style={{
-              flex: 1, height: '68px', borderRadius: '16px',
-              background: canStart ? gameConfig.themeColor : 'rgba(255,255,255,0.08)',
-              border: 'none', cursor: canStart ? 'pointer' : 'not-allowed',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
-              fontSize: '20px', fontWeight: 900, color: 'white',
-              opacity: canStart ? 1 : 0.4,
-              boxShadow: canStart ? `0 8px 24px ${gameConfig.themeColor}55` : 'none',
-            }}
-          >
-            <Play style={{ width: '26px', height: '26px' }} fill="currentColor" />
-            INICIAR PARTIDA
-          </motion.button>
-        </div>
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={handleStartGame}
+          disabled={!canStart}
+          style={{
+            width: '100%', height: '68px', borderRadius: '16px',
+            background: canStart ? gameConfig.themeColor : 'rgba(255,255,255,0.08)',
+            border: 'none', cursor: canStart ? 'pointer' : 'not-allowed',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+            fontSize: '20px', fontWeight: 900, color: 'white',
+            opacity: canStart ? 1 : 0.4,
+            boxShadow: canStart ? `0 8px 24px ${gameConfig.themeColor}55` : 'none',
+          }}
+        >
+          <Play style={{ width: '26px', height: '26px' }} fill="currentColor" />
+          INICIAR PARTIDA
+        </motion.button>
       </div>
-
-      {showShareModal && pendingSessionId && (
-        <ShareModal
-          sessionId={pendingSessionId}
-          gameName={gameConfig.name}
-          themeColor={gameConfig.themeColor}
-          onClose={() => setShowShareModal(false)}
-          onConfirmStart={handleConfirmStart}
-        />
-      )}
     </div>
   );
 };
