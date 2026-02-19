@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Crown, TrendingDown } from 'lucide-react';
+import { Crown, TrendingDown, Plus } from 'lucide-react';
 import type { Player } from '../types';
 
 interface PlayerRowProps {
@@ -8,6 +8,8 @@ interface PlayerRowProps {
   isLeader: boolean;
   isLast: boolean;
   onScoreSubmit?: (score: number) => void;
+  onWinnerSelect?: () => void;   // modo winner_takes_all
+  mode?: 'numeric' | 'winner';
   showInput?: boolean;
   themeColor: string;
 }
@@ -17,6 +19,8 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
   isLeader,
   isLast,
   onScoreSubmit,
+  onWinnerSelect,
+  mode = 'numeric',
   showInput = true,
   themeColor,
 }) => {
@@ -56,7 +60,7 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
       }}
     >
       {/* ── Player info row ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: showInput ? '14px' : '0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: (showInput && mode === 'numeric') ? '14px' : '0' }}>
 
         {/* Avatar */}
         <div style={{
@@ -103,10 +107,29 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Botão +1 no modo winner */}
+        {mode === 'winner' && showInput && (
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            onClick={onWinnerSelect}
+            style={{
+              flexShrink: 0,
+              width: '64px', height: '64px',
+              borderRadius: '16px', border: 'none', cursor: 'pointer',
+              background: `linear-gradient(135deg, ${themeColor}, ${themeColor}cc)`,
+              color: 'white', fontSize: '28px', fontWeight: 900,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: `0 4px 16px ${themeColor}55`,
+            }}
+          >
+            <Plus style={{ width: '28px', height: '28px' }} strokeWidth={3} />
+          </motion.button>
+        )}
       </div>
 
-      {/* ── Score input ── */}
-      {showInput && (
+      {/* ── Score input (modo numeric) ── */}
+      {mode === 'numeric' && showInput && (
         <div style={{ display: 'flex', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
           <input
             type="number"
