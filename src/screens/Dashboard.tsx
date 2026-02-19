@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { History, Trophy, Sun, Moon, Menu, Users, X, Plus } from 'lucide-react';
+import { History, Trophy, Sun, Moon, Menu, Users, X, Plus, Share2 } from 'lucide-react';
 import { GameCard } from '../components/GameCard';
+import { AppShareModal } from '../components/AppShareModal';
 import { useGame } from '../context/GameContext';
 
 interface DashboardProps {
@@ -21,6 +22,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const { gameHistory, darkMode, toggleDarkMode, availableGames } = useGame();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showAppShare, setShowAppShare] = useState(false);
 
   return (
     <div
@@ -295,11 +297,37 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </p>
                   </div>
                 </motion.button>
+
+                {/* Compartilhar App */}
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => { setMenuOpen(false); setShowAppShare(true); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '16px',
+                    padding: '18px 20px', borderRadius: '18px',
+                    background: 'rgba(37,211,102,0.08)', border: '1px solid rgba(37,211,102,0.2)',
+                    cursor: 'pointer', width: '100%', textAlign: 'left',
+                  }}
+                >
+                  <div style={{
+                    width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(37,211,102,0.12)',
+                  }}>
+                    <Share2 style={{ width: '24px', height: '24px', color: '#25D366' }} />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '17px', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>Compartilhar App</p>
+                    <p style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>QR Code e link para amigos</p>
+                  </div>
+                </motion.button>
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
+
+      {showAppShare && <AppShareModal onClose={() => setShowAppShare(false)} />}
     </div>
   );
 };
