@@ -135,7 +135,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* ── Footer ── */}
       <div style={{ textAlign: 'center', padding: '16px', color: '#334155', fontSize: '12px' }}>
-        Desenvolvido por PV
+        Desenvolvido por PVGames
       </div>
     </div>
   );
