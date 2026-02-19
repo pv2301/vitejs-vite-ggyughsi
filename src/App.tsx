@@ -6,6 +6,8 @@ import { ActiveGame } from './screens/ActiveGame';
 import { Podium } from './screens/Podium';
 import { History } from './screens/History';
 import { Tournaments } from './screens/Tournaments';
+import { PlayerManager } from './screens/PlayerManager';
+import { GameEditor } from './screens/GameEditor';
 import type { GameSession } from './types';
 
 type Screen =
@@ -14,7 +16,9 @@ type Screen =
   | { type: 'active' }
   | { type: 'podium'; session: GameSession }
   | { type: 'history' }
-  | { type: 'tournaments' };
+  | { type: 'tournaments' }
+  | { type: 'players' }
+  | { type: 'new-game' };
 
 const AppContent: React.FC = () => {
   const { currentSession, darkMode } = useGame();
@@ -32,12 +36,22 @@ const AppContent: React.FC = () => {
   const handleBackToHome = () => setScreen({ type: 'dashboard' });
   const handleOpenHistory = () => setScreen({ type: 'history' });
   const handleOpenTournaments = () => setScreen({ type: 'tournaments' });
+  const handleOpenPlayers = () => setScreen({ type: 'players' });
+  const handleOpenNewGame = () => setScreen({ type: 'new-game' });
   const handleViewSession = (session: GameSession) => setScreen({ type: 'podium', session });
 
   const screenContent = (() => {
     switch (screen.type) {
       case 'dashboard':
-        return <Dashboard onSelectGame={handleSelectGame} onOpenHistory={handleOpenHistory} onOpenTournaments={handleOpenTournaments} />;
+        return (
+          <Dashboard
+            onSelectGame={handleSelectGame}
+            onOpenHistory={handleOpenHistory}
+            onOpenTournaments={handleOpenTournaments}
+            onOpenPlayers={handleOpenPlayers}
+            onOpenNewGame={handleOpenNewGame}
+          />
+        );
       case 'setup':
         return <GameSetup gameId={screen.gameId} onBack={handleBackToHome} onStartGame={handleStartGame} />;
       case 'active':
@@ -48,6 +62,10 @@ const AppContent: React.FC = () => {
         return <History onBack={handleBackToHome} onViewSession={handleViewSession} />;
       case 'tournaments':
         return <Tournaments onBack={handleBackToHome} />;
+      case 'players':
+        return <PlayerManager onBack={handleBackToHome} />;
+      case 'new-game':
+        return <GameEditor onBack={handleBackToHome} />;
       default:
         return null;
     }

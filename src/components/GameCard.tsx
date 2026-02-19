@@ -63,14 +63,23 @@ export const GameCard: React.FC<GameCardProps> = ({ game, onClick }) => {
         pointerEvents: 'none',
       }} />
 
-      {/* Ícone — tamanho fixo */}
+      {/* Ícone / Imagem — tamanho fixo */}
       <div style={{
         width: '60px', height: '60px', borderRadius: '14px', flexShrink: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         backgroundColor: game.themeColor,
         boxShadow: `0 4px 12px ${game.themeColor}55`,
+        overflow: 'hidden',
       }}>
-        <MainIcon style={{ width: '32px', height: '32px', color: 'white' }} strokeWidth={2} />
+        {game.imageBase64 ? (
+          <img
+            src={game.imageBase64}
+            alt={game.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <MainIcon style={{ width: '32px', height: '32px', color: 'white' }} strokeWidth={2} />
+        )}
       </div>
 
       {/* Texto — bloco de largura fixa */}

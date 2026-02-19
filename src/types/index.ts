@@ -10,6 +10,8 @@ export interface GameConfig {
   roundBased: boolean;
   description: string;
   icon: string;
+  imageBase64?: string;
+  isCustom?: boolean;
 }
 
 export interface Player {
@@ -51,4 +53,6 @@ export interface AppState {
   gameHistory: GameSession[];
   tournaments: Tournament[];
   darkMode: boolean;
+  customGames: GameConfig[];
+  gameOverrides: Record<string, Partial<GameConfig>>;
 }
