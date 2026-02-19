@@ -31,9 +31,7 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSubmit();
-    }
+    if (e.key === 'Enter') handleSubmit();
   };
 
   return (
@@ -42,65 +40,143 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className={`p-4 rounded-xl transition-all duration-300 ${
-        isLeader
-          ? 'bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 border-2 border-yellow-500'
-          : 'bg-slate-800/50 border-2 border-slate-700/50'
-      }`}
+      style={{
+        padding: '16px',
+        borderRadius: '16px',
+        border: isLeader
+          ? '2.5px solid #eab308'
+          : isLast
+          ? '2px solid rgba(239,68,68,0.35)'
+          : '2px solid rgba(71,85,105,0.5)',
+        background: isLeader
+          ? 'linear-gradient(135deg, rgba(234,179,8,0.15) 0%, rgba(202,138,4,0.08) 100%)'
+          : isLast
+          ? 'rgba(239,68,68,0.06)'
+          : 'rgba(30,41,59,0.6)',
+      }}
     >
-      <div className="flex items-center gap-3 mb-3">
-        <div
-          className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold shadow-lg"
-          style={{ backgroundColor: player.color }}
-        >
+      {/* ── Player info row ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: showInput ? '14px' : '0' }}>
+
+        {/* Avatar */}
+        <div style={{
+          width: '56px', height: '56px', borderRadius: '50%', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '24px', fontWeight: 700,
+          backgroundColor: player.color,
+          boxShadow: isLeader ? `0 0 0 3px #eab308` : `0 0 0 2px ${player.color}66`,
+        }}>
           {player.avatar}
         </div>
 
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-400">#{player.position}</span>
-            <h3 className="text-lg font-bold text-white">{player.name}</h3>
-            {isLeader && <Crown className="w-5 h-5 text-yellow-400" fill="currentColor" />}
-            {isLast && <TrendingDown className="w-5 h-5 text-red-400" />}
+        {/* Text block */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Position + name + icons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#64748b' }}>
+              #{player.position}
+            </span>
+            <span style={{
+              fontSize: '20px', fontWeight: 900, color: 'white',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              letterSpacing: '-0.01em',
+            }}>
+              {player.name}
+            </span>
+            {isLeader && (
+              <Crown style={{ width: '20px', height: '20px', color: '#facc15', flexShrink: 0 }} fill="currentColor" />
+            )}
+            {isLast && (
+              <TrendingDown style={{ width: '20px', height: '20px', color: '#f87171', flexShrink: 0 }} />
+            )}
           </div>
-          <div className="flex items-center gap-2 mt-1">
-            <p className="text-2xl font-bold" style={{ color: themeColor }}>
+
+          {/* Score + rounds */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '4px' }}>
+            <span style={{ fontSize: '28px', fontWeight: 900, color: themeColor, lineHeight: 1 }}>
               {player.totalScore}
-            </p>
-            <span className="text-xs text-slate-400">pts</span>
-            <span className="text-xs text-slate-500">•</span>
-            <span className="text-xs text-slate-400">{player.roundScores.length} rodadas</span>
+            </span>
+            <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 500 }}>pts</span>
+            <span style={{ fontSize: '14px', color: '#334155' }}>•</span>
+            <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 500 }}>
+              {player.roundScores.length} {player.roundScores.length === 1 ? 'rodada' : 'rodadas'}
+            </span>
           </div>
         </div>
       </div>
 
+      {/* ── Score input ── */}
       {showInput && (
-        <div className="flex gap-2">
+        <div style={{ display: 'flex', gap: '10px' }}>
           <input
             type="number"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Pontos da rodada"
-            className="flex-1 px-4 py-4 bg-slate-700 text-white text-lg font-bold rounded-xl border-2 border-slate-600 focus:border-blue-500 focus:outline-none transition-colors"
+            style={{
+              flex: 1,
+              padding: '16px 18px',
+              background: 'rgba(15,23,42,0.7)',
+              color: 'white',
+              fontSize: '18px',
+              fontWeight: 700,
+              borderRadius: '14px',
+              border: inputValue ? `2px solid ${themeColor}` : '2px solid rgba(71,85,105,0.6)',
+              outline: 'none',
+              transition: 'border-color 0.15s',
+            }}
           />
           <button
             onClick={handleSubmit}
             disabled={!inputValue}
-            className="min-w-[56px] px-6 py-4 rounded-xl font-black text-white text-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
-            style={{ backgroundColor: themeColor }}
+            style={{
+              minWidth: '64px',
+              height: 'auto',
+              padding: '0 20px',
+              borderRadius: '14px',
+              border: 'none',
+              cursor: inputValue ? 'pointer' : 'not-allowed',
+              backgroundColor: inputValue ? themeColor : 'rgba(71,85,105,0.4)',
+              color: 'white',
+              fontSize: '26px',
+              fontWeight: 900,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: inputValue ? 1 : 0.5,
+              transition: 'background-color 0.15s, opacity 0.15s',
+              boxShadow: inputValue ? `0 4px 14px ${themeColor}55` : 'none',
+            }}
           >
             +
           </button>
         </div>
       )}
 
+      {/* ── Round history chips ── */}
       {player.roundScores.length > 0 && (
-        <div className="mt-3 flex gap-1 overflow-x-auto pb-2">
+        <div style={{
+          marginTop: '12px',
+          display: 'flex',
+          gap: '6px',
+          overflowX: 'auto',
+          paddingBottom: '4px',
+        }}>
           {player.roundScores.map((score, index) => (
             <span
               key={index}
-              className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300 whitespace-nowrap"
+              style={{
+                padding: '4px 10px',
+                background: 'rgba(71,85,105,0.4)',
+                borderRadius: '999px',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: score > 0 ? '#94a3b8' : score < 0 ? '#f87171' : '#64748b',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                border: '1px solid rgba(71,85,105,0.3)',
+              }}
             >
               R{index + 1}: {score > 0 ? '+' : ''}{score}
             </span>

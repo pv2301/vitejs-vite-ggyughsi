@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, UserPlus } from 'lucide-react';
+import { Plus, X, UserPlus, Pencil, Check } from 'lucide-react';
 import type { Player } from '../types';
+import { useGame } from '../context/GameContext';
 
 interface PlayerSelectorProps {
   selectedPlayers: Omit<Player, 'totalScore' | 'roundScores' | 'position'>[];
@@ -21,10 +22,14 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
   onRemovePlayer,
   themeColor,
 }) => {
+  const { renameSavedPlayer } = useGame();
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0]);
+  // Estado de edição: id do jogador salvo sendo editado
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
 
   const handleAdd = () => {
     if (!newName.trim()) return;
@@ -45,6 +50,24 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
     if (e.key === 'Escape') setIsAdding(false);
   };
 
+  const startEdit = (player: Omit<Player, 'totalScore' | 'roundScores' | 'position'>) => {
+    setEditingId(player.id);
+    setEditingName(player.name);
+  };
+
+  const confirmEdit = () => {
+    if (editingId && editingName.trim()) {
+      renameSavedPlayer(editingId, editingName.trim());
+    }
+    setEditingId(null);
+    setEditingName('');
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') confirmEdit();
+    if (e.key === 'Escape') { setEditingId(null); setEditingName(''); }
+  };
+
   const availableSaved = savedPlayers.filter(
     sp => !selectedPlayers.find(p => p.id === sp.id)
   );
@@ -52,42 +75,41 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-      {/* Lista de jogadores selecionados */}
+      {/* Jogadores selecionados */}
       <AnimatePresence>
         {selectedPlayers.map((player) => (
           <motion.div
             key={player.id}
             initial={{ opacity: 0, x: -16 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-            style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(15,23,42,0.6)', borderRadius: '16px', padding: '16px', border: '1px solid #334155' }}
+            exit={{ opacity: 0, height: 0 }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '14px',
+              background: 'rgba(15,23,42,0.6)', borderRadius: '16px',
+              padding: '14px 16px', border: '1px solid #334155',
+            }}
           >
-            {/* Avatar com borda colorida */}
-            <div
-              style={{
-                width: '56px', height: '56px', borderRadius: '16px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '24px', flexShrink: 0, boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                backgroundColor: `${player.color}33`,
-                border: `3px solid ${player.color}`,
-              }}
-            >
+            <div style={{
+              width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '22px', backgroundColor: `${player.color}33`,
+              border: `2.5px solid ${player.color}`,
+            }}>
               {player.avatar}
             </div>
-
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontWeight: 900, color: 'white', fontSize: '18px', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{player.name}</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: player.color }} />
-                <span style={{ color: '#64748b', fontSize: '14px' }}>{player.avatar}</span>
-              </div>
+              <p style={{ fontWeight: 900, color: 'white', fontSize: '17px', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {player.name}
+              </p>
             </div>
-
             <button
               onClick={() => onRemovePlayer(player.id)}
-              style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(239,68,68,0.1)', borderRadius: '12px', border: 'none', cursor: 'pointer' }}
+              style={{
+                width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'rgba(239,68,68,0.1)', borderRadius: '10px', border: 'none', cursor: 'pointer',
+              }}
             >
-              <X style={{ width: '20px', height: '20px', color: '#f87171' }} />
+              <X style={{ width: '18px', height: '18px', color: '#f87171' }} />
             </button>
           </motion.div>
         ))}
@@ -103,28 +125,87 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
             exit={{ opacity: 0 }}
             style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
           >
-            {/* Chips de jogadores salvos */}
+            {/* Chips de jogadores salvos com edição */}
             {availableSaved.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {availableSaved.map(player => (
-                  <button
+                  <div
                     key={player.id}
-                    onClick={() => onAddPlayer(player)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'rgba(15,23,42,0.6)', borderRadius: '999px', border: '1px solid #334155', cursor: 'pointer' }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      background: 'rgba(15,23,42,0.6)', borderRadius: '14px',
+                      border: '1px solid #334155', padding: '10px 12px',
+                    }}
                   >
-                    <div
-                      style={{
-                        width: '28px', height: '28px', borderRadius: '50%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px',
-                        backgroundColor: `${player.color}44`,
-                        border: `2px solid ${player.color}`,
-                      }}
-                    >
+                    {/* Avatar */}
+                    <div style={{
+                      width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '18px', backgroundColor: `${player.color}44`,
+                      border: `2px solid ${player.color}`,
+                    }}>
                       {player.avatar}
                     </div>
-                    <span style={{ fontSize: '15px', fontWeight: 700, color: '#cbd5e1' }}>{player.name}</span>
-                    <Plus style={{ width: '14px', height: '14px', color: '#64748b' }} />
-                  </button>
+
+                    {/* Nome ou input de edição */}
+                    {editingId === player.id ? (
+                      <input
+                        autoFocus
+                        value={editingName}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        onKeyDown={handleEditKeyDown}
+                        style={{
+                          flex: 1, background: '#1e293b', border: `2px solid ${player.color}`,
+                          borderRadius: '8px', padding: '6px 10px',
+                          color: 'white', fontSize: '16px', fontWeight: 700, outline: 'none',
+                        }}
+                      />
+                    ) : (
+                      <span style={{ flex: 1, fontSize: '16px', fontWeight: 700, color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {player.name}
+                      </span>
+                    )}
+
+                    {/* Botão editar/confirmar */}
+                    {editingId === player.id ? (
+                      <button
+                        onClick={confirmEdit}
+                        style={{
+                          width: '36px', height: '36px', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: `${player.color}33`, borderRadius: '9px', border: 'none', cursor: 'pointer',
+                        }}
+                      >
+                        <Check style={{ width: '18px', height: '18px', color: player.color }} />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => startEdit(player)}
+                        style={{
+                          width: '36px', height: '36px', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: 'rgba(255,255,255,0.06)', borderRadius: '9px', border: 'none', cursor: 'pointer',
+                        }}
+                      >
+                        <Pencil style={{ width: '15px', height: '15px', color: '#64748b' }} />
+                      </button>
+                    )}
+
+                    {/* Botão adicionar à partida */}
+                    {editingId !== player.id && (
+                      <button
+                        onClick={() => onAddPlayer(player)}
+                        style={{
+                          width: '36px', height: '36px', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: `${themeColor}22`, borderRadius: '9px', border: `1.5px solid ${themeColor}55`,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Plus style={{ width: '18px', height: '18px', color: themeColor }} />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
@@ -132,9 +213,14 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
             {/* Botão adicionar novo */}
             <button
               onClick={() => setIsAdding(true)}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '20px', borderRadius: '16px', border: '2px dashed #475569', color: '#94a3b8', fontWeight: 700, fontSize: '17px', background: 'transparent', cursor: 'pointer' }}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                gap: '12px', padding: '20px', borderRadius: '16px',
+                border: '2px dashed #475569', color: '#94a3b8',
+                fontWeight: 700, fontSize: '17px', background: 'transparent', cursor: 'pointer',
+              }}
             >
-              <UserPlus style={{ width: '24px', height: '24px' }} />
+              <UserPlus style={{ width: '22px', height: '22px' }} />
               Adicionar Novo Jogador
             </button>
           </motion.div>
@@ -146,32 +232,33 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
             exit={{ opacity: 0, y: 8 }}
             style={{ background: '#0f172a', borderRadius: '24px', border: '1px solid #334155', overflow: 'hidden' }}
           >
-            {/* Header com preview ao vivo */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #1e293b' }}>
+            {/* Header com preview */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '16px 20px', borderBottom: '1px solid #1e293b',
+            }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div
-                  style={{
-                    width: '48px', height: '48px', borderRadius: '12px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px',
-                    backgroundColor: `${selectedColor}33`,
-                    border: `3px solid ${selectedColor}`,
-                    transition: 'all 0.2s',
-                  }}
-                >
+                <div style={{
+                  width: '48px', height: '48px', borderRadius: '12px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px',
+                  backgroundColor: `${selectedColor}33`, border: `3px solid ${selectedColor}`, transition: 'all 0.2s',
+                }}>
                   {selectedAvatar}
                 </div>
                 <span style={{ fontWeight: 900, color: 'white', fontSize: '18px' }}>Novo Jogador</span>
               </div>
               <button
                 onClick={() => setIsAdding(false)}
-                style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e293b', borderRadius: '12px', border: 'none', cursor: 'pointer' }}
+                style={{
+                  width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: '#1e293b', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                }}
               >
                 <X style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
               </button>
             </div>
 
             <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {/* Input nome */}
               <input
                 autoFocus
                 type="text"
@@ -188,7 +275,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
                 }}
               />
 
-              {/* Seleção de avatar */}
+              {/* Avatar */}
               <div>
                 <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Avatar</p>
                 <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
@@ -198,7 +285,8 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
                       onClick={() => setSelectedAvatar(avatar)}
                       style={{
                         width: '48px', height: '48px', borderRadius: '12px', fontSize: '24px', flexShrink: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        border: 'none', cursor: 'pointer',
                         backgroundColor: selectedAvatar === avatar ? `${selectedColor}44` : '#1e293b',
                         outline: selectedAvatar === avatar ? `3px solid ${selectedColor}` : '3px solid transparent',
                         outlineOffset: '2px',
@@ -212,7 +300,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
                 </div>
               </div>
 
-              {/* Seleção de cor */}
+              {/* Cor */}
               <div>
                 <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Cor</p>
                 <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
@@ -233,12 +321,16 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
                 </div>
               </div>
 
-              {/* Botão confirmar */}
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={handleAdd}
                 disabled={!newName.trim()}
-                style={{ width: '100%', padding: '20px', borderRadius: '16px', fontWeight: 900, color: 'white', fontSize: '20px', backgroundColor: selectedColor, border: 'none', cursor: 'pointer', opacity: newName.trim() ? 1 : 0.4 }}
+                style={{
+                  width: '100%', padding: '20px', borderRadius: '16px',
+                  fontWeight: 900, color: 'white', fontSize: '20px',
+                  backgroundColor: selectedColor, border: 'none', cursor: 'pointer',
+                  opacity: newName.trim() ? 1 : 0.4,
+                }}
               >
                 CONFIRMAR
               </motion.button>

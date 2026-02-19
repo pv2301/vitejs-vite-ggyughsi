@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { History, Trophy } from 'lucide-react';
+import { History, Trophy, Sun, Moon } from 'lucide-react';
 import { GameCard } from '../components/GameCard';
 import { GAME_CONFIGS } from '../config/games';
 import { useGame } from '../context/GameContext';
@@ -16,7 +16,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenHistory,
   onOpenTournaments,
 }) => {
-  const { gameHistory } = useGame();
+  const { gameHistory, darkMode, toggleDarkMode } = useGame();
 
   return (
     <div
@@ -31,7 +31,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     >
       {/* ── Header ── */}
       <div style={{ padding: '0 20px 8px' }}>
-        {/* Topo: app name + ações */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
           <div>
             <motion.div
@@ -53,28 +52,50 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           {/* Botões de ação */}
           <div style={{ display: 'flex', gap: '10px' }}>
+            {/* Tema */}
+            <motion.button
+              whileTap={{ scale: 0.92 }}
+              onClick={toggleDarkMode}
+              style={{
+                width: '52px', height: '52px', borderRadius: '14px',
+                border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer',
+                background: 'rgba(255,255,255,0.07)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              {darkMode
+                ? <Sun style={{ width: '22px', height: '22px', color: '#fbbf24' }} />
+                : <Moon style={{ width: '22px', height: '22px', color: '#94a3b8' }} />
+              }
+            </motion.button>
+
+            {/* Torneios */}
             <motion.button
               whileTap={{ scale: 0.92 }}
               onClick={onOpenTournaments}
               style={{
-                width: '72px', height: '52px', borderRadius: '14px', border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer',
-                background: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                position: 'relative',
+                width: '52px', height: '52px', borderRadius: '14px',
+                border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer',
+                background: 'rgba(255,255,255,0.07)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
-              <Trophy style={{ width: '24px', height: '24px', color: '#f59e0b' }} />
+              <Trophy style={{ width: '22px', height: '22px', color: '#f59e0b' }} />
             </motion.button>
 
+            {/* Histórico */}
             <motion.button
               whileTap={{ scale: 0.92 }}
               onClick={onOpenHistory}
               style={{
-                width: '72px', height: '52px', borderRadius: '14px', border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer',
-                background: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '52px', height: '52px', borderRadius: '14px',
+                border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer',
+                background: 'rgba(255,255,255,0.07)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
                 position: 'relative',
               }}
             >
-              <History style={{ width: '24px', height: '24px', color: '#60a5fa' }} />
+              <History style={{ width: '22px', height: '22px', color: '#60a5fa' }} />
               {gameHistory.length > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
@@ -114,7 +135,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* ── Footer ── */}
       <div style={{ textAlign: 'center', padding: '16px', color: '#334155', fontSize: '12px' }}>
-        Desenvolvido por Paulo Victor
+        Desenvolvido por PV
       </div>
     </div>
   );

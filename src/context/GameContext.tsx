@@ -12,6 +12,7 @@ interface GameContextType extends AppState {
   finishSession: () => void;
   addSavedPlayer: (player: Omit<Player, 'totalScore' | 'roundScores' | 'position'>) => void;
   removeSavedPlayer: (playerId: string) => void;
+  renameSavedPlayer: (playerId: string, newName: string) => void;
   toggleDarkMode: () => void;
   clearCurrentSession: () => void;
   deleteHistorySession: (sessionId: string) => void;
@@ -98,6 +99,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const clearCurrentSession = () => setState(prev => ({ ...prev, currentSession: null }));
   const addSavedPlayer = (p: any) => setState(prev => ({ ...prev, savedPlayers: [...prev.savedPlayers, p] }));
   const removeSavedPlayer = (id: string) => setState(prev => ({ ...prev, savedPlayers: prev.savedPlayers.filter(p => p.id !== id) }));
+  const renameSavedPlayer = (id: string, newName: string) => setState(prev => ({ ...prev, savedPlayers: prev.savedPlayers.map(p => p.id === id ? { ...p, name: newName } : p) }));
   const deleteHistorySession = (id: string) => setState(prev => ({ ...prev, gameHistory: prev.gameHistory.filter(s => s.id !== id) }));
   const toggleDarkMode = () => setState(prev => ({ ...prev, darkMode: !prev.darkMode }));
   const createTournament = (name: string, gameId: string) => setState(prev => ({ ...prev, tournaments: [...prev.tournaments, { id: Date.now().toString(), name, gameId, sessions: [], players: [], createdAt: new Date().toISOString() }] }));
@@ -114,6 +116,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         finishSession,
         addSavedPlayer,
         removeSavedPlayer,
+        renameSavedPlayer,
         toggleDarkMode,
         clearCurrentSession,
         deleteHistorySession,
