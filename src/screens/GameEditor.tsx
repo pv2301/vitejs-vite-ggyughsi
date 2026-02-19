@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useGame } from '../context/GameContext';
-import type { GameConfig, VictoryCondition } from '../types';
+import type { GameConfig, VictoryCondition, ScoringMode } from '../types';
 
 interface GameEditorProps {
   onBack: () => void;
@@ -63,6 +63,7 @@ export const GameEditor: React.FC<GameEditorProps> = ({ onBack }) => {
   const [winningScore, setWinningScore] = useState('');
   const [allowNegative, setAllowNegative] = useState(true);
   const [roundBased, setRoundBased] = useState(true);
+  const [scoringMode, setScoringMode] = useState<ScoringMode>('numeric');
 
   const canCreate = name.trim().length > 0;
   const PreviewIcon = fullIconMap[selectedIcon] || Dices;
@@ -87,6 +88,7 @@ export const GameEditor: React.FC<GameEditorProps> = ({ onBack }) => {
       winningScore: winningScore ? parseInt(winningScore, 10) : undefined,
       allowNegative,
       roundBased,
+      scoringMode,
       description: name.trim(),
       icon: selectedIcon,
       imageBase64: imageBase64 ?? undefined,
@@ -330,7 +332,7 @@ export const GameEditor: React.FC<GameEditorProps> = ({ onBack }) => {
             </div>
 
             {/* Sistema */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid #1e293b' }}>
               <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: 500 }}>Sistema</span>
               <select
                 value={roundBased ? 'rounds' : 'continuous'}
@@ -339,6 +341,19 @@ export const GameEditor: React.FC<GameEditorProps> = ({ onBack }) => {
               >
                 <option value="rounds">Por rodadas</option>
                 <option value="continuous">Pontuação contínua</option>
+              </select>
+            </div>
+
+            {/* Modo de pontuação */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px' }}>
+              <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: 500 }}>Pontuação</span>
+              <select
+                value={scoringMode}
+                onChange={e => setScoringMode(e.target.value as ScoringMode)}
+                style={{ ...selectStyle, width: 'auto', padding: '8px 12px', fontSize: '14px', fontWeight: 700, color: 'white', background: '#0f172a', border: '1.5px solid #334155', borderRadius: '10px' }}
+              >
+                <option value="numeric">Numérica por rodada</option>
+                <option value="winner_takes_all">Vencedor da rodada (+1)</option>
               </select>
             </div>
           </div>

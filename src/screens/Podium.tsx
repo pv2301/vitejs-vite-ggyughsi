@@ -2,8 +2,8 @@ import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Home, Share2, Download, Trophy } from 'lucide-react';
 import html2canvas from 'html2canvas';
-import type { GameSession } from '../types';
-import { getGameConfig } from '../config/games';
+import type { GameSession, Player, Team } from '../types';
+import { useGame } from '../context/GameContext';
 
 interface PodiumProps {
   session: GameSession;
@@ -13,15 +13,25 @@ interface PodiumProps {
 export const Podium: React.FC<PodiumProps> = ({ session, onBackToHome }) => {
   const podiumRef = useRef<HTMLDivElement>(null);
   const [isSharing, setIsSharing] = useState(false);
+  const { availableGames } = useGame();
 
-  const gameConfig = getGameConfig(session.gameId);
+  const gameConfig = availableGames.find(g => g.id === session.gameId);
   if (!gameConfig) return null;
 
-  const sortedPlayers = [...session.players].sort((a, b) =>
-    gameConfig.victoryCondition === 'lowest_score'
-      ? a.totalScore - b.totalScore
-      : b.totalScore - a.totalScore
-  );
+  const isTeamMode = !!(session.teams?.length);
+
+  // Ordenação genérica por totalScore
+  const sortByScore = <T extends { totalScore: number }>(items: T[]): T[] =>
+    [...items].sort((a, b) =>
+      gameConfig.victoryCondition === 'lowest_score'
+        ? a.totalScore - b.totalScore
+        : b.totalScore - a.totalScore
+    );
+
+  const sortedPlayers: Player[] = isTeamMode ? [] : sortByScore(session.players);
+  const sortedTeams: Team[] = isTeamMode ? sortByScore(session.teams ?? []) : [];
+
+  const participants = isTeamMode ? sortedTeams : sortedPlayers;
 
   const handleShare = async () => {
     if (!podiumRef.current) return;
@@ -54,6 +64,42 @@ export const Podium: React.FC<PodiumProps> = ({ session, onBackToHome }) => {
   ];
   const barHeights = ['68%', '52%', '40%'];
 
+  // Avatar/ícone genérico para times e jogadores
+  const renderAvatar = (p: Player | Team, size: number, rank: number) => {
+    if ('avatar' in p) {
+      // Player
+      return (
+        <div style={{
+          width: size, height: size, borderRadius: '50%', margin: '0 auto 6px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: rank === 0 ? '28px' : '22px',
+          backgroundColor: (p as Player).color,
+          boxShadow: rank === 0 ? `0 0 0 3px #f59e0b` : 'none',
+        }}>
+          {(p as Player).avatar}
+        </div>
+      );
+    } else {
+      // Team
+      const team = p as Team;
+      return (
+        <div style={{
+          width: size, height: size, borderRadius: '14px', margin: '0 auto 6px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: rank === 0 ? '16px' : '13px', fontWeight: 900, color: 'white',
+          backgroundColor: team.color,
+          boxShadow: rank === 0 ? `0 0 0 3px #f59e0b` : 'none',
+          padding: '4px',
+        }}>
+          {team.name.substring(0, 2).toUpperCase()}
+        </div>
+      );
+    }
+  };
+
+  const getName = (p: Player | Team) => 'avatar' in p ? (p as Player).name : (p as Team).name;
+  const getScore = (p: Player | Team) => p.totalScore;
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -85,54 +131,44 @@ export const Podium: React.FC<PodiumProps> = ({ session, onBackToHome }) => {
             {gameConfig.name}
           </div>
           <div style={{ fontSize: '14px', color: '#475569', marginTop: '4px' }}>
-            {session.currentRound} {session.currentRound === 1 ? 'rodada' : 'rodadas'} • {session.players.length} jogadores
+            {session.currentRound} {session.currentRound === 1 ? 'rodada' : 'rodadas'}
+            {isTeamMode
+              ? ` · ${sortedTeams.length} times`
+              : ` · ${sortedPlayers.length} jogadores`}
           </div>
         </motion.div>
 
         {/* Pódio visual — top 3 */}
-        {sortedPlayers.length >= 2 && (
+        {participants.length >= 2 && (
           <div style={{
             display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
             gap: '8px', height: '240px', marginBottom: '28px',
           }}>
-            {/* Reordena: 2º, 1º, 3º */}
             {[
-              { player: sortedPlayers[1], rank: 1, barH: barHeights[1], medal: medalColors[1] },
-              { player: sortedPlayers[0], rank: 0, barH: barHeights[0], medal: medalColors[0] },
-              ...(sortedPlayers[2] ? [{ player: sortedPlayers[2], rank: 2, barH: barHeights[2], medal: medalColors[2] }] : []),
-            ].map(({ player, rank, barH, medal }) => (
+              { item: participants[1], rank: 1, barH: barHeights[1], medal: medalColors[1] },
+              { item: participants[0], rank: 0, barH: barHeights[0], medal: medalColors[0] },
+              ...(participants[2] ? [{ item: participants[2], rank: 2, barH: barHeights[2], medal: medalColors[2] }] : []),
+            ].map(({ item, rank, barH, medal }) => (
               <motion.div
-                key={player.id}
+                key={getName(item)}
                 initial={{ y: 60, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: rank === 0 ? 0.2 : rank === 1 ? 0.35 : 0.45, type: 'spring' }}
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, maxWidth: '110px' }}
               >
-                {/* Avatar + nome + score */}
                 <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-                  <div style={{
-                    width: rank === 0 ? '64px' : '52px',
-                    height: rank === 0 ? '64px' : '52px',
-                    borderRadius: '50%', margin: '0 auto 6px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: rank === 0 ? '28px' : '22px',
-                    backgroundColor: player.color,
-                    boxShadow: rank === 0 ? `0 0 0 3px #f59e0b` : 'none',
-                  }}>
-                    {player.avatar}
-                  </div>
+                  {renderAvatar(item, rank === 0 ? 64 : 52, rank)}
                   <div style={{
                     fontSize: rank === 0 ? '15px' : '13px', fontWeight: 900, color: 'white',
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '90px',
                   }}>
-                    {player.name}
+                    {getName(item)}
                   </div>
                   <div style={{ fontSize: rank === 0 ? '20px' : '16px', fontWeight: 900, color: gameConfig.themeColor, lineHeight: 1.2 }}>
-                    {player.totalScore}
+                    {getScore(item)}
                   </div>
                 </div>
 
-                {/* Barra do pódio */}
                 <div style={{
                   width: '100%', height: barH, borderRadius: '10px 10px 0 0',
                   background: medal,
@@ -148,15 +184,15 @@ export const Podium: React.FC<PodiumProps> = ({ session, onBackToHome }) => {
           </div>
         )}
 
-        {/* Demais jogadores */}
-        {sortedPlayers.length > 3 && (
+        {/* Demais participantes (4º+) */}
+        {participants.length > 3 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
             <div style={{ fontSize: '14px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
               Classificação geral
             </div>
-            {sortedPlayers.slice(3).map((player, i) => (
+            {participants.slice(3).map((item, i) => (
               <motion.div
-                key={player.id}
+                key={getName(item)}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 + i * 0.08 }}
@@ -169,16 +205,26 @@ export const Podium: React.FC<PodiumProps> = ({ session, onBackToHome }) => {
                 <span style={{ fontSize: '15px', fontWeight: 900, color: '#475569', width: '28px', textAlign: 'center' }}>
                   #{i + 4}
                 </span>
-                <div style={{
-                  width: '40px', height: '40px', borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '20px', backgroundColor: player.color,
-                }}>
-                  {player.avatar}
-                </div>
-                <span style={{ flex: 1, fontSize: '17px', fontWeight: 800, color: 'white' }}>{player.name}</span>
+                {'avatar' in item ? (
+                  <div style={{
+                    width: '40px', height: '40px', borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '20px', backgroundColor: (item as Player).color,
+                  }}>
+                    {(item as Player).avatar}
+                  </div>
+                ) : (
+                  <div style={{
+                    width: '40px', height: '40px', borderRadius: '10px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '13px', fontWeight: 900, color: 'white', backgroundColor: (item as Team).color,
+                  }}>
+                    {(item as Team).name.substring(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <span style={{ flex: 1, fontSize: '17px', fontWeight: 800, color: 'white' }}>{getName(item)}</span>
                 <span style={{ fontSize: '20px', fontWeight: 900, color: gameConfig.themeColor }}>
-                  {player.totalScore}
+                  {getScore(item)}
                 </span>
               </motion.div>
             ))}
@@ -193,9 +239,7 @@ export const Podium: React.FC<PodiumProps> = ({ session, onBackToHome }) => {
         background: 'linear-gradient(to top, #0f172a 60%, transparent)',
       }}>
         <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
           whileTap={{ scale: 0.97 }}
           onClick={onBackToHome}
           style={{
@@ -210,9 +254,7 @@ export const Podium: React.FC<PodiumProps> = ({ session, onBackToHome }) => {
         </motion.button>
 
         <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}
           whileTap={{ scale: 0.97 }}
           onClick={handleShare}
           disabled={isSharing}

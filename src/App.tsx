@@ -61,7 +61,7 @@ const AppContent: React.FC = () => {
       case 'history':
         return <History onBack={handleBackToHome} onViewSession={handleViewSession} />;
       case 'tournaments':
-        return <Tournaments onBack={handleBackToHome} />;
+        return <Tournaments onBack={handleBackToHome} onSelectGame={handleSelectGame} />;
       case 'players':
         return <PlayerManager onBack={handleBackToHome} />;
       case 'new-game':
