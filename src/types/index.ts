@@ -55,4 +55,5 @@ export interface AppState {
   darkMode: boolean;
   customGames: GameConfig[];
   gameOverrides: Record<string, Partial<GameConfig>>;
+  gameOrder: string[]; // IDs dos jogos na ordem desejada
 }

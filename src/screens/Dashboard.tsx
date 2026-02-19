@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { History, Trophy, Sun, Moon, Menu, Users, X, Plus, Share2 } from 'lucide-react';
+import { History, Trophy, Sun, Moon, Menu, Users, X, Plus, Share2, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
 import { GameCard } from '../components/GameCard';
 import { AppShareModal } from '../components/AppShareModal';
 import { useGame } from '../context/GameContext';
@@ -20,9 +20,44 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenPlayers,
   onOpenNewGame,
 }) => {
-  const { gameHistory, darkMode, toggleDarkMode, availableGames } = useGame();
+  const { gameHistory, darkMode, toggleDarkMode, availableGames, reorderGames } = useGame();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAppShare, setShowAppShare] = useState(false);
+  const [reorderMode, setReorderMode] = useState(false);
+
+  // Long press logic
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+
+  const startLongPress = useCallback(() => {
+    longPressFired.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      setReorderMode(true);
+    }, 600);
+  }, []);
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleCardClick = useCallback((gameId: string) => {
+    if (longPressFired.current || reorderMode) return;
+    onSelectGame(gameId);
+  }, [reorderMode, onSelectGame]);
+
+  const moveUp = (index: number) => {
+    if (index === 0) return;
+    reorderGames(index, index - 1);
+  };
+
+  const moveDown = (index: number) => {
+    if (index === availableGames.length - 1) return;
+    reorderGames(index, index + 1);
+  };
 
   return (
     <div
@@ -50,77 +85,187 @@ export const Dashboard: React.FC<DashboardProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
-            style={{ fontSize: '14px', color: '#64748b', marginTop: '4px', fontWeight: 500 }}
+            style={{ fontSize: '14px', color: reorderMode ? '#f59e0b' : '#64748b', marginTop: '4px', fontWeight: 500, transition: 'color 0.2s' }}
           >
-            Escolha seu jogo
+            {reorderMode ? 'Reordenando jogos...' : 'Escolha seu jogo'}
           </motion.div>
         </div>
 
-        {/* Botões — apenas 2 */}
+        {/* Botões */}
         <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
-          {/* Tema */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={toggleDarkMode}
-            style={{
-              width: '48px', height: '48px', borderRadius: '14px',
-              border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer',
-              background: 'rgba(255,255,255,0.07)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            {darkMode
-              ? <Sun style={{ width: '20px', height: '20px', color: '#fbbf24' }} />
-              : <Moon style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
-            }
-          </motion.button>
-
-          {/* Menu ≡ */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setMenuOpen(true)}
-            style={{
-              width: '48px', height: '48px', borderRadius: '14px',
-              border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer',
-              background: 'rgba(255,255,255,0.07)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              position: 'relative',
-            }}
-          >
-            <Menu style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
-            {/* Badge do histórico no botão menu */}
-            {gameHistory.length > 0 && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
+          {reorderMode ? (
+            /* Botão Concluir reordenação */
+            <motion.button
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setReorderMode(false)}
+              style={{
+                height: '48px', paddingLeft: '16px', paddingRight: '16px',
+                borderRadius: '14px', border: '1.5px solid rgba(245,158,11,0.4)',
+                cursor: 'pointer', background: 'rgba(245,158,11,0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                color: '#f59e0b', fontWeight: 800, fontSize: '14px',
+              }}
+            >
+              Concluir
+            </motion.button>
+          ) : (
+            <>
+              {/* Tema */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={toggleDarkMode}
                 style={{
-                  position: 'absolute', top: '-4px', right: '-4px',
-                  minWidth: '18px', height: '18px', padding: '0 4px',
-                  background: '#ef4444', borderRadius: '999px',
+                  width: '48px', height: '48px', borderRadius: '14px',
+                  border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer',
+                  background: 'rgba(255,255,255,0.07)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '10px', color: 'white', fontWeight: 700,
                 }}
               >
-                {gameHistory.length > 9 ? '9+' : gameHistory.length}
-              </motion.span>
-            )}
-          </motion.button>
+                {darkMode
+                  ? <Sun style={{ width: '20px', height: '20px', color: '#fbbf24' }} />
+                  : <Moon style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
+                }
+              </motion.button>
+
+              {/* Menu ≡ */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setMenuOpen(true)}
+                style={{
+                  width: '48px', height: '48px', borderRadius: '14px',
+                  border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer',
+                  background: 'rgba(255,255,255,0.07)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  position: 'relative',
+                }}
+              >
+                <Menu style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
+                {gameHistory.length > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    style={{
+                      position: 'absolute', top: '-4px', right: '-4px',
+                      minWidth: '18px', height: '18px', padding: '0 4px',
+                      background: '#ef4444', borderRadius: '999px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '10px', color: 'white', fontWeight: 700,
+                    }}
+                  >
+                    {gameHistory.length > 9 ? '9+' : gameHistory.length}
+                  </motion.span>
+                )}
+              </motion.button>
+            </>
+          )}
         </div>
       </div>
 
       {/* ── Divisor ── */}
       <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '12px 0' }} />
 
+      {/* Dica de reordenação */}
+      <AnimatePresence>
+        {!reorderMode && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              textAlign: 'center', fontSize: '11px', color: '#334155',
+              paddingBottom: '4px', fontWeight: 500,
+            }}
+          >
+            Segure um card para reordenar
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Lista de jogos ── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {availableGames.map((game, index) => (
           <motion.div
             key={game.id}
+            layout
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.07 }}
+            transition={{ delay: reorderMode ? 0 : index * 0.07, layout: { type: 'spring', stiffness: 400, damping: 32 } }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
-            <GameCard game={game} onClick={() => onSelectGame(game.id)} />
+            {/* Botões ▲▼ — visíveis só em modo reordenar */}
+            <AnimatePresence>
+              {reorderMode && (
+                <motion.div
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 'auto' }}
+                  exit={{ opacity: 0, width: 0 }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0, overflow: 'hidden' }}
+                >
+                  <button
+                    onClick={() => moveUp(index)}
+                    disabled={index === 0}
+                    style={{
+                      width: '36px', height: '36px', borderRadius: '10px', border: 'none',
+                      background: index === 0 ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.1)',
+                      cursor: index === 0 ? 'default' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      opacity: index === 0 ? 0.2 : 1,
+                    }}
+                  >
+                    <ChevronUp style={{ width: '18px', height: '18px', color: 'white' }} />
+                  </button>
+                  <button
+                    onClick={() => moveDown(index)}
+                    disabled={index === availableGames.length - 1}
+                    style={{
+                      width: '36px', height: '36px', borderRadius: '10px', border: 'none',
+                      background: index === availableGames.length - 1 ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.1)',
+                      cursor: index === availableGames.length - 1 ? 'default' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      opacity: index === availableGames.length - 1 ? 0.2 : 1,
+                    }}
+                  >
+                    <ChevronDown style={{ width: '18px', height: '18px', color: 'white' }} />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Card — com long press */}
+            <div
+              style={{ flex: 1, minWidth: 0, position: 'relative' }}
+              onMouseDown={reorderMode ? undefined : startLongPress}
+              onMouseUp={cancelLongPress}
+              onMouseLeave={cancelLongPress}
+              onTouchStart={reorderMode ? undefined : startLongPress}
+              onTouchEnd={cancelLongPress}
+              onTouchCancel={cancelLongPress}
+            >
+              {/* Indicador grip no modo reordenar */}
+              <AnimatePresence>
+                {reorderMode && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    style={{
+                      position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                      zIndex: 2, pointerEvents: 'none',
+                    }}
+                  >
+                    <GripVertical style={{ width: '20px', height: '20px', color: 'rgba(255,255,255,0.3)' }} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <GameCard
+                game={game}
+                onClick={() => handleCardClick(game.id)}
+                dimmed={reorderMode}
+              />
+            </div>
           </motion.div>
         ))}
       </div>
@@ -134,7 +279,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <AnimatePresence>
         {menuOpen && (
           <>
-            {/* Overlay */}
             <motion.div
               key="overlay"
               initial={{ opacity: 0 }}
@@ -146,8 +290,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 zIndex: 40, backdropFilter: 'blur(4px)',
               }}
             />
-
-            {/* Sheet */}
             <motion.div
               key="sheet"
               initial={{ y: '100%' }}
@@ -164,16 +306,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
               }}
             >
-              {/* Handle */}
               <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
                 <div style={{ width: '36px', height: '4px', borderRadius: '99px', background: 'rgba(255,255,255,0.2)' }} />
               </div>
-
-              {/* Header do menu */}
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '8px 20px 16px',
-              }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px 16px' }}>
                 <span style={{ fontSize: '18px', fontWeight: 900, color: 'white' }}>Menu</span>
                 <button
                   onClick={() => setMenuOpen(false)}
@@ -187,24 +323,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </button>
               </div>
 
-              {/* Opções */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 16px' }}>
                 {/* Novo Jogo */}
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => { setMenuOpen(false); onOpenNewGame(); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '16px',
-                    padding: '18px 20px', borderRadius: '18px',
-                    background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)',
-                    cursor: 'pointer', width: '100%', textAlign: 'left',
-                  }}
-                >
-                  <div style={{
-                    width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'rgba(16,185,129,0.15)',
-                  }}>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => { setMenuOpen(false); onOpenNewGame(); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '18px 20px', borderRadius: '18px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(16,185,129,0.15)' }}>
                     <Plus style={{ width: '24px', height: '24px', color: '#10b981' }} />
                   </div>
                   <div>
@@ -214,21 +337,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </motion.button>
 
                 {/* Jogadores */}
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => { setMenuOpen(false); onOpenPlayers(); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '16px',
-                    padding: '18px 20px', borderRadius: '18px',
-                    background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)',
-                    cursor: 'pointer', width: '100%', textAlign: 'left',
-                  }}
-                >
-                  <div style={{
-                    width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'rgba(96,165,250,0.15)',
-                  }}>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => { setMenuOpen(false); onOpenPlayers(); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '18px 20px', borderRadius: '18px', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(96,165,250,0.15)' }}>
                     <Users style={{ width: '24px', height: '24px', color: '#60a5fa' }} />
                   </div>
                   <div>
@@ -238,21 +349,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </motion.button>
 
                 {/* Torneios */}
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => { setMenuOpen(false); onOpenTournaments(); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '16px',
-                    padding: '18px 20px', borderRadius: '18px',
-                    background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)',
-                    cursor: 'pointer', width: '100%', textAlign: 'left',
-                  }}
-                >
-                  <div style={{
-                    width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'rgba(245,158,11,0.15)',
-                  }}>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => { setMenuOpen(false); onOpenTournaments(); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '18px 20px', borderRadius: '18px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(245,158,11,0.15)' }}>
                     <Trophy style={{ width: '24px', height: '24px', color: '#f59e0b' }} />
                   </div>
                   <div>
@@ -262,30 +361,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </motion.button>
 
                 {/* Histórico */}
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => { setMenuOpen(false); onOpenHistory(); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '16px',
-                    padding: '18px 20px', borderRadius: '18px',
-                    background: 'rgba(148,163,184,0.07)', border: '1px solid rgba(255,255,255,0.08)',
-                    cursor: 'pointer', width: '100%', textAlign: 'left',
-                  }}
-                >
-                  <div style={{
-                    width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'rgba(148,163,184,0.1)', position: 'relative',
-                  }}>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => { setMenuOpen(false); onOpenHistory(); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '18px 20px', borderRadius: '18px', background: 'rgba(148,163,184,0.07)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(148,163,184,0.1)', position: 'relative' }}>
                     <History style={{ width: '24px', height: '24px', color: '#94a3b8' }} />
                     {gameHistory.length > 0 && (
-                      <span style={{
-                        position: 'absolute', top: '-4px', right: '-4px',
-                        minWidth: '18px', height: '18px', padding: '0 4px',
-                        background: '#ef4444', borderRadius: '999px',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '10px', color: 'white', fontWeight: 700,
-                      }}>
+                      <span style={{ position: 'absolute', top: '-4px', right: '-4px', minWidth: '18px', height: '18px', padding: '0 4px', background: '#ef4444', borderRadius: '999px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: 'white', fontWeight: 700 }}>
                         {gameHistory.length > 9 ? '9+' : gameHistory.length}
                       </span>
                     )}
@@ -299,21 +380,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </motion.button>
 
                 {/* Compartilhar App */}
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => { setMenuOpen(false); setShowAppShare(true); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '16px',
-                    padding: '18px 20px', borderRadius: '18px',
-                    background: 'rgba(37,211,102,0.08)', border: '1px solid rgba(37,211,102,0.2)',
-                    cursor: 'pointer', width: '100%', textAlign: 'left',
-                  }}
-                >
-                  <div style={{
-                    width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'rgba(37,211,102,0.12)',
-                  }}>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => { setMenuOpen(false); setShowAppShare(true); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '18px 20px', borderRadius: '18px', background: 'rgba(37,211,102,0.08)', border: '1px solid rgba(37,211,102,0.2)', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(37,211,102,0.12)' }}>
                     <Share2 style={{ width: '24px', height: '24px', color: '#25D366' }} />
                   </div>
                   <div>

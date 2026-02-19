@@ -6,6 +6,7 @@ import type { GameConfig } from '../types';
 interface GameCardProps {
   game: GameConfig;
   onClick: () => void;
+  dimmed?: boolean;
 }
 
 const iconMap: Record<string, React.ElementType> = {
@@ -25,7 +26,7 @@ const subtitleMap: Record<string, string> = {
   generic: 'Pontuação personalizada',
 };
 
-export const GameCard: React.FC<GameCardProps> = ({ game, onClick }) => {
+export const GameCard: React.FC<GameCardProps> = ({ game, onClick, dimmed = false }) => {
   const MainIcon = iconMap[game.icon] || Icons.Dices;
   const subtitle = subtitleMap[game.id] || 'Jogue com seus amigos';
 
@@ -37,10 +38,10 @@ export const GameCard: React.FC<GameCardProps> = ({ game, onClick }) => {
   return (
     <motion.button
       onClick={onClick}
-      whileTap={{ scale: 0.97 }}
+      whileTap={dimmed ? {} : { scale: 0.97 }}
       style={{
         width: '100%',
-        height: '92px',           /* altura fixa → todos os cards iguais */
+        height: '92px',
         display: 'flex',
         alignItems: 'center',
         gap: '16px',
@@ -48,12 +49,14 @@ export const GameCard: React.FC<GameCardProps> = ({ game, onClick }) => {
         borderRadius: '16px',
         border: `3px solid ${game.themeColor}`,
         background: `linear-gradient(135deg, ${game.themeColor}22 0%, ${game.themeColor}0d 100%)`,
-        cursor: 'pointer',
+        cursor: dimmed ? 'default' : 'pointer',
         textAlign: 'left',
         position: 'relative',
         overflow: 'hidden',
         boxShadow: `0 4px 20px ${game.themeColor}33`,
         boxSizing: 'border-box',
+        opacity: dimmed ? 0.6 : 1,
+        transition: 'opacity 0.2s',
       }}
     >
       {/* Brilho sutil no topo */}
