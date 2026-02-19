@@ -21,6 +21,7 @@ interface GameContextType extends AppState {
   deleteCustomGame: (gameId: string) => void;
   updateGameOverride: (gameId: string, overrides: Partial<GameConfig>) => void;
   updateGameImage: (gameId: string, imageBase64: string) => void;
+  reorderGames: (fromIndex: number, toIndex: number) => void;
 }
 
 const STORAGE_KEY = 'scoremaster_data';
@@ -33,6 +34,7 @@ const defaultState: AppState = {
   darkMode: true,
   customGames: [],
   gameOverrides: {},
+  gameOrder: [],
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -48,6 +50,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           ...parsed,
           customGames: parsed.customGames ?? [],
           gameOverrides: parsed.gameOverrides ?? {},
+          gameOrder: parsed.gameOrder ?? [],
         };
       } catch {
         return defaultState;
@@ -64,11 +67,21 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     document.documentElement.classList.toggle('dark', state.darkMode);
   }, [state.darkMode]);
 
-  // availableGames = jogos fixos com overrides + jogos custom
-  const availableGames: GameConfig[] = [
+  // Lista base: jogos fixos com overrides + jogos custom
+  const baseGames: GameConfig[] = [
     ...GAME_CONFIGS.map(g => ({ ...g, ...(state.gameOverrides[g.id] ?? {}) })),
     ...state.customGames,
   ];
+
+  // Aplica gameOrder se existir, mantendo jogos novos no final
+  const availableGames: GameConfig[] = state.gameOrder.length > 0
+    ? [
+        ...state.gameOrder
+          .map(id => baseGames.find(g => g.id === id))
+          .filter((g): g is GameConfig => g !== undefined),
+        ...baseGames.filter(g => !state.gameOrder.includes(g.id)),
+      ]
+    : baseGames;
 
   const getEffectiveConfig = (gameId: string): GameConfig | undefined =>
     availableGames.find(g => g.id === gameId);
@@ -123,20 +136,45 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const createTournament = (name: string, gameId: string) => setState(prev => ({ ...prev, tournaments: [...prev.tournaments, { id: Date.now().toString(), name, gameId, sessions: [], players: [], createdAt: new Date().toISOString() }] }));
   const addSessionToTournament = (tId: string, sId: string) => setState(prev => ({ ...prev, tournaments: prev.tournaments.map(t => t.id === tId ? { ...t, sessions: [...t.sessions, sId] } : t) }));
 
-  const addCustomGame = (game: GameConfig) => setState(prev => ({ ...prev, customGames: [...prev.customGames, game] }));
-  const deleteCustomGame = (gameId: string) => setState(prev => ({ ...prev, customGames: prev.customGames.filter(g => g.id !== gameId) }));
+  const addCustomGame = (game: GameConfig) => setState(prev => ({
+    ...prev,
+    customGames: [...prev.customGames, game],
+  }));
+
+  const deleteCustomGame = (gameId: string) => setState(prev => ({
+    ...prev,
+    customGames: prev.customGames.filter(g => g.id !== gameId),
+    gameOrder: prev.gameOrder.filter(id => id !== gameId),
+  }));
+
   const updateGameOverride = (gameId: string, overrides: Partial<GameConfig>) =>
     setState(prev => ({
       ...prev,
       gameOverrides: { ...prev.gameOverrides, [gameId]: { ...(prev.gameOverrides[gameId] ?? {}), ...overrides } },
       customGames: prev.customGames.map(g => g.id === gameId ? { ...g, ...overrides } : g),
     }));
+
   const updateGameImage = (gameId: string, imageBase64: string) =>
     setState(prev => ({
       ...prev,
       gameOverrides: { ...prev.gameOverrides, [gameId]: { ...(prev.gameOverrides[gameId] ?? {}), imageBase64 } },
       customGames: prev.customGames.map(g => g.id === gameId ? { ...g, imageBase64 } : g),
     }));
+
+  const reorderGames = (fromIndex: number, toIndex: number) => {
+    setState(prev => {
+      const currentOrder = prev.gameOrder.length > 0
+        ? prev.gameOrder
+        : [
+            ...GAME_CONFIGS.map(g => g.id),
+            ...prev.customGames.map(g => g.id),
+          ];
+      const newOrder = [...currentOrder];
+      const [moved] = newOrder.splice(fromIndex, 1);
+      newOrder.splice(toIndex, 0, moved);
+      return { ...prev, gameOrder: newOrder };
+    });
+  };
 
   return (
     <GameContext.Provider
@@ -159,6 +197,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         deleteCustomGame,
         updateGameOverride,
         updateGameImage,
+        reorderGames,
       }}
     >
       {children}
