@@ -1,11 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { AppState, GameSession, Player, GameConfig } from '../types';
-import { GAME_CONFIGS, getGameConfig } from '../config/games';
+import { GAME_CONFIGS } from '../config/games';
 
-// 1. Interface atualizada com a lista de jogos
 interface GameContextType extends AppState {
-  availableGames: GameConfig[]; 
+  availableGames: GameConfig[];
   startNewSession: (gameId: string, players: Player[], sessionId?: string) => void;
   updatePlayerScore: (playerId: string, score: number) => void;
   nextRound: () => void;
@@ -18,6 +17,10 @@ interface GameContextType extends AppState {
   deleteHistorySession: (sessionId: string) => void;
   createTournament: (name: string, gameId: string) => void;
   addSessionToTournament: (tournamentId: string, sessionId: string) => void;
+  addCustomGame: (game: GameConfig) => void;
+  deleteCustomGame: (gameId: string) => void;
+  updateGameOverride: (gameId: string, overrides: Partial<GameConfig>) => void;
+  updateGameImage: (gameId: string, imageBase64: string) => void;
 }
 
 const STORAGE_KEY = 'scoremaster_data';
@@ -28,6 +31,8 @@ const defaultState: AppState = {
   gameHistory: [],
   tournaments: [],
   darkMode: true,
+  customGames: [],
+  gameOverrides: {},
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -37,7 +42,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return {
+          ...defaultState,
+          ...parsed,
+          customGames: parsed.customGames ?? [],
+          gameOverrides: parsed.gameOverrides ?? {},
+        };
       } catch {
         return defaultState;
       }
@@ -52,6 +63,15 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     document.documentElement.classList.toggle('dark', state.darkMode);
   }, [state.darkMode]);
+
+  // availableGames = jogos fixos com overrides + jogos custom
+  const availableGames: GameConfig[] = [
+    ...GAME_CONFIGS.map(g => ({ ...g, ...(state.gameOverrides[g.id] ?? {}) })),
+    ...state.customGames,
+  ];
+
+  const getEffectiveConfig = (gameId: string): GameConfig | undefined =>
+    availableGames.find(g => g.id === gameId);
 
   const calculatePlayerPosition = (players: Player[], victoryCondition: string): Player[] => {
     const sorted = [...players].sort((a, b) => {
@@ -78,9 +98,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updatePlayerScore = (playerId: string, score: number) => {
     setState(prev => {
       if (!prev.currentSession) return prev;
-      const gameConfig = getGameConfig(prev.currentSession.gameId);
+      const gameConfig = getEffectiveConfig(prev.currentSession.gameId);
       if (!gameConfig) return prev;
-
       const updatedPlayers = prev.currentSession.players.map(player => {
         if (player.id === playerId) {
           const newRoundScores = [...player.roundScores, score];
@@ -93,7 +112,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
-  // Funções auxiliares
   const nextRound = () => setState(prev => prev.currentSession ? { ...prev, currentSession: { ...prev.currentSession, currentRound: prev.currentSession.currentRound + 1 } } : prev);
   const finishSession = () => setState(prev => prev.currentSession ? { ...prev, currentSession: null, gameHistory: [{ ...prev.currentSession, status: 'finished', finishedAt: new Date().toISOString() }, ...prev.gameHistory] } : prev);
   const clearCurrentSession = () => setState(prev => ({ ...prev, currentSession: null }));
@@ -105,11 +123,26 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const createTournament = (name: string, gameId: string) => setState(prev => ({ ...prev, tournaments: [...prev.tournaments, { id: Date.now().toString(), name, gameId, sessions: [], players: [], createdAt: new Date().toISOString() }] }));
   const addSessionToTournament = (tId: string, sId: string) => setState(prev => ({ ...prev, tournaments: prev.tournaments.map(t => t.id === tId ? { ...t, sessions: [...t.sessions, sId] } : t) }));
 
+  const addCustomGame = (game: GameConfig) => setState(prev => ({ ...prev, customGames: [...prev.customGames, game] }));
+  const deleteCustomGame = (gameId: string) => setState(prev => ({ ...prev, customGames: prev.customGames.filter(g => g.id !== gameId) }));
+  const updateGameOverride = (gameId: string, overrides: Partial<GameConfig>) =>
+    setState(prev => ({
+      ...prev,
+      gameOverrides: { ...prev.gameOverrides, [gameId]: { ...(prev.gameOverrides[gameId] ?? {}), ...overrides } },
+      customGames: prev.customGames.map(g => g.id === gameId ? { ...g, ...overrides } : g),
+    }));
+  const updateGameImage = (gameId: string, imageBase64: string) =>
+    setState(prev => ({
+      ...prev,
+      gameOverrides: { ...prev.gameOverrides, [gameId]: { ...(prev.gameOverrides[gameId] ?? {}), imageBase64 } },
+      customGames: prev.customGames.map(g => g.id === gameId ? { ...g, imageBase64 } : g),
+    }));
+
   return (
     <GameContext.Provider
       value={{
         ...state,
-        availableGames: GAME_CONFIGS, // <--- AQUI ESTÁ A CHAVE PARA O LAYOUT NOVO FUNCIONAR
+        availableGames,
         startNewSession,
         updatePlayerScore,
         nextRound,
@@ -122,6 +155,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         deleteHistorySession,
         createTournament,
         addSessionToTournament,
+        addCustomGame,
+        deleteCustomGame,
+        updateGameOverride,
+        updateGameImage,
       }}
     >
       {children}

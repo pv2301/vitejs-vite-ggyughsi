@@ -107,7 +107,7 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
 
       {/* ── Score input ── */}
       {showInput && (
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
           <input
             type="number"
             value={inputValue}
@@ -116,24 +116,25 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
             placeholder="Pontos da rodada"
             style={{
               flex: 1,
-              padding: '16px 18px',
+              minWidth: 0,
+              padding: '14px 14px',
               background: 'rgba(15,23,42,0.7)',
               color: 'white',
-              fontSize: '18px',
+              fontSize: '17px',
               fontWeight: 700,
               borderRadius: '14px',
               border: inputValue ? `2px solid ${themeColor}` : '2px solid rgba(71,85,105,0.6)',
               outline: 'none',
               transition: 'border-color 0.15s',
+              boxSizing: 'border-box',
             }}
           />
           <button
             onClick={handleSubmit}
             disabled={!inputValue}
             style={{
-              minWidth: '64px',
-              height: 'auto',
-              padding: '0 20px',
+              width: '56px',
+              flexShrink: 0,
               borderRadius: '14px',
               border: 'none',
               cursor: inputValue ? 'pointer' : 'not-allowed',

@@ -26,7 +26,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   }, [sessionId]);
 
   const whatsappText = encodeURIComponent(
-    `Estou jogando ${gameName} no ScoreMaster! Acompanhe a partida ao vivo: ${shareUrl}`
+    `Estou jogando ${gameName} no ScoreGames! Acompanhe a partida ao vivo: ${shareUrl}`
   );
   const whatsappUrl = `https://wa.me/?text=${whatsappText}`;
 
@@ -48,97 +48,159 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
   return (
     <AnimatePresence>
+      {/* Overlay */}
       <motion.div
+        key="share-overlay"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end justify-center z-50"
         onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.8)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          zIndex: 50,
+        }}
       >
+        {/* Sheet */}
         <motion.div
-          initial={{ y: 100, opacity: 0 }}
+          key="share-sheet"
+          initial={{ y: '100%', opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
+          exit={{ y: '100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-          className="bg-slate-800 rounded-t-3xl w-full max-w-md border-t border-x border-slate-700 overflow-hidden"
-          style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))' }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
+          style={{
+            background: '#1e293b',
+            borderRadius: '28px 28px 0 0',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderBottom: 'none',
+            width: '100%',
+            maxWidth: '480px',
+            paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
+            overflow: 'hidden',
+          }}
         >
-          {/* Handle bar */}
-          <div className="flex justify-center pt-3 pb-2">
-            <div className="w-12 h-1.5 bg-slate-600 rounded-full" />
+          {/* Handle */}
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
+            <div style={{ width: '36px', height: '4px', borderRadius: '99px', background: 'rgba(255,255,255,0.2)' }} />
           </div>
 
           {/* Header */}
-          <div className="flex items-center justify-between px-6 pb-5">
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '8px 20px 16px',
+          }}>
             <div>
-              <h2 className="text-xl font-black text-white">Compartilhar Partida</h2>
-              <p className="text-slate-400 text-sm mt-0.5">{gameName}</p>
+              <h2 style={{ fontSize: '20px', fontWeight: 900, color: 'white', margin: 0 }}>
+                Compartilhar Partida
+              </h2>
+              <p style={{ fontSize: '14px', color: '#64748b', margin: '4px 0 0' }}>{gameName}</p>
             </div>
             <button
               onClick={onClose}
-              className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center"
+              style={{
+                width: '40px', height: '40px', borderRadius: '12px',
+                background: 'rgba(255,255,255,0.07)', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}
             >
-              <X className="w-5 h-5 text-slate-300" />
+              <X style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
             </button>
           </div>
 
-          {/* QR Code */}
-          <div className="mx-6 mb-4 bg-white rounded-2xl p-5 flex items-center justify-center">
+          {/* QR Code — fundo branco, centralizado */}
+          <div style={{
+            margin: '0 20px 16px',
+            background: 'white',
+            borderRadius: '20px',
+            padding: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
             <QRCode
               value={shareUrl}
-              size={200}
+              size={Math.min(200, typeof window !== 'undefined' ? window.innerWidth - 120 : 200)}
               level="M"
               bgColor="#ffffff"
               fgColor="#0f172a"
             />
           </div>
 
-          {/* URL + copy */}
-          <div className="mx-6 mb-5 bg-slate-900 rounded-xl px-4 py-3 flex items-center gap-3">
-            <span className="flex-1 text-slate-400 text-xs truncate font-mono">
+          {/* URL + Copiar */}
+          <div style={{
+            margin: '0 20px 16px',
+            background: '#0f172a',
+            borderRadius: '14px',
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+          }}>
+            <span style={{
+              flex: 1, fontSize: '12px', color: '#64748b',
+              fontFamily: 'monospace', overflow: 'hidden',
+              textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              minWidth: 0,
+            }}>
               {shareUrl}
             </span>
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1.5 shrink-0 transition-colors"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer',
+                padding: '4px 0',
+              }}
             >
               {copied ? (
                 <>
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-bold text-emerald-400">Copiado!</span>
+                  <Check style={{ width: '16px', height: '16px', color: '#34d399' }} />
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#34d399' }}>Copiado!</span>
                 </>
               ) : (
                 <>
-                  <Copy className="w-4 h-4 text-blue-400" />
-                  <span className="text-xs font-bold text-blue-400">Copiar</span>
+                  <Copy style={{ width: '16px', height: '16px', color: '#60a5fa' }} />
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#60a5fa' }}>Copiar</span>
                 </>
               )}
             </button>
           </div>
 
-          {/* Action buttons */}
-          <div className="px-6 space-y-3">
+          {/* Botões de ação */}
+          <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {/* WhatsApp */}
             <a
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl font-bold text-white text-base"
-              style={{ backgroundColor: '#25D366' }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                gap: '10px', width: '100%', padding: '18px',
+                borderRadius: '16px', fontWeight: 700, color: 'white',
+                fontSize: '16px', backgroundColor: '#25D366',
+                textDecoration: 'none', boxSizing: 'border-box',
+              }}
             >
-              <MessageCircle className="w-6 h-6" fill="currentColor" />
+              <MessageCircle style={{ width: '22px', height: '22px' }} fill="currentColor" />
               Compartilhar via WhatsApp
             </a>
 
-            {/* Continue to game */}
+            {/* Continuar */}
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={onConfirmStart}
-              className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl font-black text-white text-base"
-              style={{ backgroundColor: themeColor }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                gap: '10px', width: '100%', padding: '18px',
+                borderRadius: '16px', fontWeight: 900, color: 'white',
+                fontSize: '16px', backgroundColor: themeColor,
+                border: 'none', cursor: 'pointer', boxSizing: 'border-box',
+              }}
             >
-              <Play className="w-5 h-5" fill="currentColor" />
+              <Play style={{ width: '18px', height: '18px' }} fill="currentColor" />
               Continuar para o Jogo
             </motion.button>
           </div>
