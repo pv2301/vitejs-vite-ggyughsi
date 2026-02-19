@@ -84,14 +84,12 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ background: 'linear-gradient(to bottom right, #0f172a, #1e293b, #0f172a)' }}
-    >
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#0f172a' }}>
+
       {/* ── ZONA 1: Hero Header ── */}
       <div
-        className="relative overflow-hidden shrink-0"
         style={{
+          position: 'relative', overflow: 'hidden', flexShrink: 0,
           background: `linear-gradient(135deg, ${gameConfig.themeColor}ee 0%, ${gameConfig.themeColor}88 100%)`,
           paddingTop: 'max(52px, env(safe-area-inset-top, 52px))',
           paddingBottom: '28px',
@@ -100,52 +98,60 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
         }}
       >
         {/* Ícone decorativo de fundo */}
-        <div className="absolute -right-8 -bottom-4 opacity-[0.15] rotate-12 pointer-events-none">
+        <div style={{ position: 'absolute', right: '-32px', bottom: '-16px', opacity: 0.15, transform: 'rotate(12deg)', pointerEvents: 'none' }}>
           <MainIcon size={160} color="white" />
         </div>
 
-        {/* Botão voltar — absoluto no topo */}
+        {/* Botão voltar */}
         <button
           onClick={onBack}
-          className="absolute left-5 flex items-center justify-center w-11 h-11 bg-black/20 backdrop-blur-sm rounded-2xl border border-white/20"
-          style={{ top: 'max(12px, env(safe-area-inset-top, 12px))' }}
+          style={{
+            position: 'absolute', left: '20px', top: 'max(12px, env(safe-area-inset-top, 12px))',
+            width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(0,0,0,0.2)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.2)',
+            cursor: 'pointer',
+          }}
         >
-          <ArrowLeft className="w-6 h-6 text-white" />
+          <ArrowLeft style={{ width: '24px', height: '24px', color: 'white' }} />
         </button>
 
-        {/* Badge do ícone do jogo */}
-        <div className="mt-2 mb-4">
-          <div className="inline-flex p-4 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30 shadow-xl">
-            <MainIcon className="w-10 h-10 text-white" strokeWidth={2} />
+        {/* Badge do ícone */}
+        <div style={{ marginTop: '8px', marginBottom: '16px' }}>
+          <div style={{
+            display: 'inline-flex', padding: '16px',
+            background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)',
+            borderRadius: '20px', border: '1px solid rgba(255,255,255,0.3)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+          }}>
+            <MainIcon style={{ width: '40px', height: '40px', color: 'white' }} strokeWidth={2} />
           </div>
         </div>
 
-        {/* Nome e subtítulo */}
-        <h1 className="text-4xl font-black text-white leading-tight tracking-tight">
+        {/* Nome */}
+        <div style={{ fontSize: '42px', fontWeight: 900, color: 'white', lineHeight: 1, letterSpacing: '-0.02em' }}>
           {gameConfig.name}
-        </h1>
-        <p className="text-white/70 text-base mt-1 font-medium">Configure sua partida</p>
+        </div>
+        <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '17px', marginTop: '6px', fontWeight: 500 }}>
+          Configure sua partida
+        </div>
       </div>
 
       {/* ── ZONA 2: Corpo scrollável ── */}
-      <div className="flex-1 overflow-y-auto px-4 py-5 pb-36 space-y-4">
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px 160px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
         {/* Regras colapsáveis */}
-        <div
-          className="rounded-2xl overflow-hidden border"
-          style={{
-            background: `${gameConfig.themeColor}18`,
-            borderColor: `${gameConfig.themeColor}44`,
-          }}
-        >
+        <div style={{ borderRadius: '16px', overflow: 'hidden', border: `2px solid ${gameConfig.themeColor}55`, background: `${gameConfig.themeColor}18` }}>
           <button
             onClick={() => setRulesOpen(r => !r)}
-            className="w-full flex items-center justify-between px-5 py-4"
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '20px 22px', background: 'transparent', border: 'none', cursor: 'pointer',
+            }}
           >
-            <span className="font-bold text-white text-base">Regras do Jogo</span>
+            <span style={{ fontWeight: 900, color: 'white', fontSize: '20px', letterSpacing: '-0.01em' }}>Regras do Jogo</span>
             {rulesOpen
-              ? <ChevronUp className="w-5 h-5 text-white/60" />
-              : <ChevronDown className="w-5 h-5 text-white/60" />
+              ? <ChevronUp style={{ width: '24px', height: '24px', color: 'rgba(255,255,255,0.6)' }} />
+              : <ChevronDown style={{ width: '24px', height: '24px', color: 'rgba(255,255,255,0.6)' }} />
             }
           </button>
 
@@ -156,31 +162,25 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="overflow-hidden"
+                style={{ overflow: 'hidden' }}
               >
-                <div className="px-5 pb-5 space-y-3 border-t border-white/10">
-                  <div className="flex justify-between items-center pt-3">
-                    <span className="text-slate-400 text-sm">Vitória</span>
-                    <span className="font-semibold text-white text-sm">{victoryLabel}</span>
-                  </div>
-                  {gameConfig.winningScore && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400 text-sm">Meta</span>
-                      <span className="font-semibold text-white text-sm">{gameConfig.winningScore} pts</span>
+                <div style={{ padding: '0 20px 20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                  {[
+                    { label: 'Vitória', value: victoryLabel },
+                    ...(gameConfig.winningScore ? [{ label: 'Meta', value: `${gameConfig.winningScore} pts` }] : []),
+                    { label: 'Score negativo', value: gameConfig.allowNegative ? 'Permitido' : 'Não permitido' },
+                    { label: 'Sistema', value: gameConfig.roundBased ? 'Por rodadas' : 'Pontuação contínua' },
+                  ].map((row, i, arr) => (
+                    <div key={row.label} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      paddingTop: i === 0 ? '16px' : '12px',
+                      paddingBottom: '12px',
+                      borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none',
+                    }}>
+                      <span style={{ color: '#94a3b8', fontSize: '15px' }}>{row.label}</span>
+                      <span style={{ color: 'white', fontSize: '15px', fontWeight: 700 }}>{row.value}</span>
                     </div>
-                  )}
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-400 text-sm">Score negativo</span>
-                    <span className="font-semibold text-white text-sm">
-                      {gameConfig.allowNegative ? 'Permitido' : 'Não permitido'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-400 text-sm">Sistema</span>
-                    <span className="font-semibold text-white text-sm">
-                      {gameConfig.roundBased ? 'Por rodadas' : 'Pontuação contínua'}
-                    </span>
-                  </div>
+                  ))}
                 </div>
               </motion.div>
             )}
@@ -188,10 +188,10 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
         </div>
 
         {/* Seletor de jogadores */}
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700/60 p-5">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
+        <div style={{ background: 'rgba(30,41,59,0.8)', borderRadius: '16px', border: '2px solid rgba(71,85,105,0.6)', padding: '20px' }}>
+          <div style={{ fontSize: '20px', fontWeight: 900, color: 'white', letterSpacing: '-0.01em', marginBottom: '16px' }}>
             Jogadores
-          </p>
+          </div>
           <PlayerSelector
             selectedPlayers={selectedPlayers}
             savedPlayers={savedPlayers}
@@ -202,42 +202,60 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
         </div>
       </div>
 
-      {/* ── ZONA 3: Footer fixo com CTA ── */}
-      <div
-        className="fixed bottom-0 left-0 right-0 px-4 pt-3 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent"
-        style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}
-      >
+      {/* ── ZONA 3: Footer fixo ── */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        padding: `16px 16px max(20px, env(safe-area-inset-bottom, 20px))`,
+        background: 'linear-gradient(to top, #0f172a 60%, rgba(15,23,42,0.95) 85%, transparent)',
+        display: 'flex', flexDirection: 'column', gap: '10px',
+      }}>
         {!canStart && (
-          <p className="text-center text-slate-500 text-xs mb-3 font-medium">
-            Adicione pelo menos 2 jogadores para começar
-          </p>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+            background: 'rgba(255,255,255,0.07)', borderRadius: '14px', padding: '16px 20px',
+            border: '1.5px solid rgba(255,255,255,0.1)',
+          }}>
+            <span style={{ fontSize: '17px', color: '#94a3b8', fontWeight: 700, textAlign: 'center' }}>
+              Adicione pelo menos 2 jogadores para começar
+            </span>
+          </div>
         )}
 
-        <div className="flex gap-3">
-          {/* Botão compartilhar (quadrado) */}
+        <div style={{ display: 'flex', gap: '12px' }}>
+          {/* Botão compartilhar */}
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleOpenShare}
             disabled={!canStart}
-            className="flex items-center justify-center w-16 h-16 rounded-2xl border-2 transition-all disabled:opacity-30"
             style={{
-              borderColor: gameConfig.themeColor,
-              backgroundColor: `${gameConfig.themeColor}22`,
+              width: '68px', height: '68px', flexShrink: 0, borderRadius: '16px',
+              border: `2.5px solid ${canStart ? gameConfig.themeColor : 'rgba(255,255,255,0.1)'}`,
+              background: canStart ? `${gameConfig.themeColor}22` : 'rgba(255,255,255,0.05)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: canStart ? 'pointer' : 'not-allowed',
+              opacity: canStart ? 1 : 0.35,
             }}
           >
-            <Share2 className="w-6 h-6" style={{ color: gameConfig.themeColor }} />
+            <Share2 style={{ width: '26px', height: '26px', color: canStart ? gameConfig.themeColor : '#475569' }} />
           </motion.button>
 
-          {/* CTA principal */}
+          {/* CTA Iniciar */}
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={handleStartGame}
             disabled={!canStart}
-            className="flex-1 h-16 rounded-2xl font-black text-white text-xl flex items-center justify-center gap-3 transition-all disabled:opacity-40 shadow-2xl"
-            style={{ backgroundColor: gameConfig.themeColor }}
+            style={{
+              flex: 1, height: '68px', borderRadius: '16px',
+              background: canStart ? gameConfig.themeColor : 'rgba(255,255,255,0.08)',
+              border: 'none', cursor: canStart ? 'pointer' : 'not-allowed',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+              fontSize: '20px', fontWeight: 900, color: 'white',
+              opacity: canStart ? 1 : 0.4,
+              boxShadow: canStart ? `0 8px 24px ${gameConfig.themeColor}55` : 'none',
+            }}
           >
-            <Play className="w-7 h-7" fill="currentColor" />
-            Iniciar Partida
+            <Play style={{ width: '26px', height: '26px' }} fill="currentColor" />
+            INICIAR PARTIDA
           </motion.button>
         </div>
       </div>

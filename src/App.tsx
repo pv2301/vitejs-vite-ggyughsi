@@ -17,7 +17,7 @@ type Screen =
   | { type: 'tournaments' };
 
 const AppContent: React.FC = () => {
-  const { currentSession } = useGame();
+  const { currentSession, darkMode } = useGame();
   const [screen, setScreen] = useState<Screen>({ type: 'dashboard' });
 
   useEffect(() => {
@@ -26,89 +26,42 @@ const AppContent: React.FC = () => {
     }
   }, [currentSession]);
 
-  const handleSelectGame = (gameId: string) => {
-    setScreen({ type: 'setup', gameId });
-  };
+  const handleSelectGame = (gameId: string) => setScreen({ type: 'setup', gameId });
+  const handleStartGame = () => setScreen({ type: 'active' });
+  const handleFinishGame = () => { if (currentSession) setScreen({ type: 'podium', session: currentSession }); };
+  const handleBackToHome = () => setScreen({ type: 'dashboard' });
+  const handleOpenHistory = () => setScreen({ type: 'history' });
+  const handleOpenTournaments = () => setScreen({ type: 'tournaments' });
+  const handleViewSession = (session: GameSession) => setScreen({ type: 'podium', session });
 
-  const handleStartGame = () => {
-    setScreen({ type: 'active' });
-  };
-
-  const handleFinishGame = () => {
-    if (currentSession) {
-      setScreen({ type: 'podium', session: currentSession });
+  const screenContent = (() => {
+    switch (screen.type) {
+      case 'dashboard':
+        return <Dashboard onSelectGame={handleSelectGame} onOpenHistory={handleOpenHistory} onOpenTournaments={handleOpenTournaments} />;
+      case 'setup':
+        return <GameSetup gameId={screen.gameId} onBack={handleBackToHome} onStartGame={handleStartGame} />;
+      case 'active':
+        return <ActiveGame onFinish={handleFinishGame} onQuit={handleBackToHome} />;
+      case 'podium':
+        return <Podium session={screen.session} onBackToHome={handleBackToHome} />;
+      case 'history':
+        return <History onBack={handleBackToHome} onViewSession={handleViewSession} />;
+      case 'tournaments':
+        return <Tournaments onBack={handleBackToHome} />;
+      default:
+        return null;
     }
-  };
+  })();
 
-  const handleBackToHome = () => {
-    setScreen({ type: 'dashboard' });
-  };
-
-  const handleOpenHistory = () => {
-    setScreen({ type: 'history' });
-  };
-
-  const handleOpenTournaments = () => {
-    setScreen({ type: 'tournaments' });
-  };
-
-  const handleViewSession = (session: GameSession) => {
-    setScreen({ type: 'podium', session });
-  };
-
-  switch (screen.type) {
-    case 'dashboard':
-      return (
-        <Dashboard
-          onSelectGame={handleSelectGame}
-          onOpenHistory={handleOpenHistory}
-          onOpenTournaments={handleOpenTournaments}
-        />
-      );
-
-    case 'setup':
-      return (
-        <GameSetup
-          gameId={screen.gameId}
-          onBack={handleBackToHome}
-          onStartGame={handleStartGame}
-        />
-      );
-
-    case 'active':
-      return (
-        <ActiveGame
-          onFinish={handleFinishGame}
-          onQuit={handleBackToHome}
-        />
-      );
-
-    case 'podium':
-      return (
-        <Podium
-          session={screen.session}
-          onBackToHome={handleBackToHome}
-        />
-      );
-
-    case 'history':
-      return (
-        <History
-          onBack={handleBackToHome}
-          onViewSession={handleViewSession}
-        />
-      );
-
-    case 'tournaments':
-      return (
-        <Tournaments
-          onBack={handleBackToHome}
-        />
-      );
-
-    default:
-      return null;
-  }
+  return (
+    <div style={{
+      filter: darkMode ? 'none' : 'invert(1) hue-rotate(180deg)',
+      minHeight: '100vh',
+      transition: 'filter 0.3s ease',
+    }}>
+      {screenContent}
+    </div>
+  );
 };
 
 export default function App() {
