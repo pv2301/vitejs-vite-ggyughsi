@@ -1,7 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MessageCircle, Play, Copy, Check } from 'lucide-react';
-import QRCode from 'react-qr-code';
+import { X, MessageCircle, Play, Users } from 'lucide-react';
 
 interface ShareModalProps {
   sessionId: string;
@@ -12,39 +11,15 @@ interface ShareModalProps {
 }
 
 export const ShareModal: React.FC<ShareModalProps> = ({
-  sessionId,
   gameName,
   themeColor,
   onClose,
   onConfirmStart,
 }) => {
-  const [copied, setCopied] = useState(false);
-
-  const shareUrl = useMemo(() => {
-    const base = window.location.origin + window.location.pathname;
-    return `${base}?session=${sessionId}`;
-  }, [sessionId]);
-
   const whatsappText = encodeURIComponent(
-    `Estou jogando ${gameName} no ScoreGames! Acompanhe a partida ao vivo: ${shareUrl}`
+    `Vamos jogar ${gameName}? Estou usando o ScoreGames para marcar os pontos. Baixe ou acesse o app e venha jogar comigo! 🎲`
   );
   const whatsappUrl = `https://wa.me/?text=${whatsappText}`;
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {
-      const el = document.createElement('textarea');
-      el.value = shareUrl;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
 
   return (
     <AnimatePresence>
@@ -94,7 +69,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           }}>
             <div>
               <h2 style={{ fontSize: '20px', fontWeight: 900, color: 'white', margin: 0 }}>
-                Compartilhar Partida
+                Chamar Jogadores
               </h2>
               <p style={{ fontSize: '14px', color: '#64748b', margin: '4px 0 0' }}>{gameName}</p>
             </div>
@@ -110,63 +85,33 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             </button>
           </div>
 
-          {/* QR Code — fundo branco, centralizado */}
+          {/* Info card */}
           <div style={{
-            margin: '0 20px 16px',
-            background: 'white',
-            borderRadius: '20px',
+            margin: '0 20px 20px',
+            background: 'rgba(255,255,255,0.04)',
+            borderRadius: '16px',
+            border: '1px solid rgba(255,255,255,0.08)',
             padding: '20px',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            gap: '16px',
+            alignItems: 'flex-start',
           }}>
-            <QRCode
-              value={shareUrl}
-              size={Math.min(200, typeof window !== 'undefined' ? window.innerWidth - 120 : 200)}
-              level="M"
-              bgColor="#ffffff"
-              fgColor="#0f172a"
-            />
-          </div>
-
-          {/* URL + Copiar */}
-          <div style={{
-            margin: '0 20px 16px',
-            background: '#0f172a',
-            borderRadius: '14px',
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-          }}>
-            <span style={{
-              flex: 1, fontSize: '12px', color: '#64748b',
-              fontFamily: 'monospace', overflow: 'hidden',
-              textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              minWidth: 0,
+            <div style={{
+              width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
+              background: `${themeColor}22`,
+              border: `1.5px solid ${themeColor}55`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              {shareUrl}
-            </span>
-            <button
-              onClick={handleCopy}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer',
-                padding: '4px 0',
-              }}
-            >
-              {copied ? (
-                <>
-                  <Check style={{ width: '16px', height: '16px', color: '#34d399' }} />
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#34d399' }}>Copiado!</span>
-                </>
-              ) : (
-                <>
-                  <Copy style={{ width: '16px', height: '16px', color: '#60a5fa' }} />
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#60a5fa' }}>Copiar</span>
-                </>
-              )}
-            </button>
+              <Users style={{ width: '22px', height: '22px', color: themeColor }} />
+            </div>
+            <div>
+              <p style={{ fontSize: '15px', fontWeight: 700, color: 'white', margin: 0, lineHeight: 1.3 }}>
+                Jogo local — mesmo dispositivo
+              </p>
+              <p style={{ fontSize: '13px', color: '#64748b', margin: '6px 0 0', lineHeight: 1.5 }}>
+                O ScoreGames funciona no seu celular. Chame os amigos e passe o celular para cada um marcar seus pontos.
+              </p>
+            </div>
           </div>
 
           {/* Botões de ação */}
@@ -185,7 +130,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
               }}
             >
               <MessageCircle style={{ width: '22px', height: '22px' }} fill="currentColor" />
-              Compartilhar via WhatsApp
+              Chamar via WhatsApp
             </a>
 
             {/* Continuar */}
@@ -201,7 +146,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
               }}
             >
               <Play style={{ width: '18px', height: '18px' }} fill="currentColor" />
-              Continuar para o Jogo
+              Começar o Jogo
             </motion.button>
           </div>
         </motion.div>
