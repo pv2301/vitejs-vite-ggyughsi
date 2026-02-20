@@ -14,9 +14,10 @@ interface GameEditorProps {
 }
 
 const THEME_COLORS = [
-  '#3b82f6', '#ef4444', '#f59e0b', '#10b981',
-  '#8b5cf6', '#ec4899', '#06b6d4', '#f97316',
-  '#84cc16', '#14b8a6',
+  '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7',
+  '#ec4899', '#ef4444', '#f97316', '#f59e0b',
+  '#eab308', '#84cc16', '#22c55e', '#10b981',
+  '#14b8a6', '#06b6d4', '#0ea5e9', '#64748b',
 ];
 
 const ICON_OPTIONS: { key: string; component: React.ElementType }[] = [
@@ -34,6 +35,20 @@ const ICON_OPTIONS: { key: string; component: React.ElementType }[] = [
   { key: 'target', component: Target },
   { key: 'puzzle', component: Puzzle },
   { key: 'swords', component: Swords },
+  { key: 'spade', component: Icons.Spade },
+  { key: 'clubs', component: Icons.Club },
+  { key: 'dice1', component: Icons.Dice1 },
+  { key: 'dice5', component: Icons.Dice5 },
+  { key: 'flag', component: Icons.Flag },
+  { key: 'rocket', component: Icons.Rocket },
+  { key: 'ghost', component: Icons.Ghost },
+  { key: 'skull', component: Icons.Skull },
+  { key: 'sparkles', component: Icons.Sparkles },
+  { key: 'wand', component: Icons.Wand2 },
+  { key: 'swords2', component: Icons.Sword },
+  { key: 'map', component: Icons.Map },
+  { key: 'compass', component: Icons.Compass },
+  { key: 'layers', component: Icons.Layers },
 ];
 
 const iconMap: Record<string, React.ElementType> = Object.fromEntries(

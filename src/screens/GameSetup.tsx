@@ -311,39 +311,23 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
                     </div>
                   )}
 
-                  {/* Sistema */}
-                  {canEditAllRules ? (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                      <span style={{ color: '#94a3b8', fontSize: '15px' }}>Sistema</span>
-                      <select value={editRoundBased ? 'rounds' : 'continuous'} onChange={e => { setEditRoundBased(e.target.value === 'rounds'); setRulesDirty(true); }} style={selectStyle}>
-                        <option value="rounds">Por rodadas</option>
-                        <option value="continuous">Pontuação contínua</option>
-                      </select>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                      <span style={{ color: '#94a3b8', fontSize: '15px' }}>Sistema</span>
-                      <span style={{ color: 'white', fontSize: '15px', fontWeight: 700 }}>{editRoundBased ? 'Por rodadas' : 'Pontuação contínua'}</span>
-                    </div>
-                  )}
+                  {/* Sistema — editável para todos os jogos */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                    <span style={{ color: '#94a3b8', fontSize: '15px' }}>Sistema</span>
+                    <select value={editRoundBased ? 'rounds' : 'continuous'} onChange={e => { setEditRoundBased(e.target.value === 'rounds'); setRulesDirty(true); }} style={selectStyle}>
+                      <option value="rounds">Por rodadas</option>
+                      <option value="continuous">Pontuação contínua</option>
+                    </select>
+                  </div>
 
-                  {/* Modo de pontuação */}
-                  {canEditAllRules ? (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', paddingBottom: '0' }}>
-                      <span style={{ color: '#94a3b8', fontSize: '15px' }}>Pontuação</span>
-                      <select value={editScoringMode} onChange={e => { setEditScoringMode(e.target.value as ScoringMode); setRulesDirty(true); }} style={selectStyle}>
-                        <option value="numeric">Numérica por rodada</option>
-                        <option value="winner_takes_all">Vencedor da rodada (+1)</option>
-                      </select>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', paddingBottom: '0' }}>
-                      <span style={{ color: '#94a3b8', fontSize: '15px' }}>Pontuação</span>
-                      <span style={{ color: 'white', fontSize: '15px', fontWeight: 700 }}>
-                        {editScoringMode === 'winner_takes_all' ? 'Vencedor da rodada (+1)' : 'Numérica por rodada'}
-                      </span>
-                    </div>
-                  )}
+                  {/* Pontuação — editável para todos os jogos */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', paddingBottom: '0' }}>
+                    <span style={{ color: '#94a3b8', fontSize: '15px' }}>Pontuação</span>
+                    <select value={editScoringMode} onChange={e => { setEditScoringMode(e.target.value as ScoringMode); setRulesDirty(true); }} style={selectStyle}>
+                      <option value="numeric">Numérica por rodada</option>
+                      <option value="winner_takes_all">Vencedor da rodada (+1)</option>
+                    </select>
+                  </div>
 
                   {rulesDirty && (
                     <motion.button
