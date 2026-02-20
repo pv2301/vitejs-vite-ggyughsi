@@ -310,7 +310,7 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
                       <PickerSheet
                         value={editScoringMode}
                         options={[
-                          { value: 'numeric', label: 'Numérica por rodada' },
+                          { value: 'numeric', label: 'Pontos por rodada' },
                           { value: 'winner_takes_all', label: 'Vencedor da rodada' },
                         ]}
                         onChange={(val) => { setEditScoringMode(val as ScoringMode); setRulesDirty(true); }}

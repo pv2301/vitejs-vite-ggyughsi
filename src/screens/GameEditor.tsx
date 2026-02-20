@@ -340,7 +340,7 @@ export const GameEditor: React.FC<GameEditorProps> = ({ onBack }) => {
                 <PickerSheet
                   value={scoringMode}
                   options={[
-                    { value: 'numeric', label: 'Numérica por rodada' },
+                    { value: 'numeric', label: 'Pontos por rodada' },
                     { value: 'winner_takes_all', label: 'Vencedor da rodada' },
                   ]}
                   onChange={(val) => setScoringMode(val as ScoringMode)}
