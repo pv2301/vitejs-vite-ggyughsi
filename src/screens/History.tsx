@@ -15,32 +15,42 @@ const ConfirmModal: React.FC<{
   onConfirm: () => void;
   onCancel: () => void;
 }> = ({ message, onConfirm, onCancel }) => (
-  <>
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onCancel}
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
-        zIndex: 100, backdropFilter: 'blur(4px)',
-      }}
-    />
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.7)',
+      zIndex: 100,
+      backdropFilter: 'blur(4px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+    }}
+    onClick={onCancel}
+  >
     <motion.div
       initial={{ opacity: 0, scale: 0.9, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9, y: 20 }}
       transition={{ type: 'spring', damping: 24, stiffness: 350 }}
+      onClick={(e: React.MouseEvent) => e.stopPropagation()}
       style={{
-        position: 'fixed', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: 'min(320px, calc(100vw - 40px))',
+        width: 'min(340px, calc(100vw - 40px))',
+        maxHeight: 'calc(100vh - 40px)',
         background: '#1e293b',
         borderRadius: '24px',
         border: '1.5px solid rgba(255,255,255,0.1)',
         padding: '28px 24px',
-        zIndex: 101,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '16px',
+        overflowY: 'auto',
+        boxSizing: 'border-box',
       }}
     >
       <div style={{
@@ -81,7 +91,7 @@ const ConfirmModal: React.FC<{
         </button>
       </div>
     </motion.div>
-  </>
+  </motion.div>
 );
 
 export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
