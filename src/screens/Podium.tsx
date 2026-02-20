@@ -38,17 +38,28 @@ export const Podium: React.FC<PodiumProps> = ({ session, onBackToHome }) => {
     setIsSharing(true);
     try {
       const canvas = await html2canvas(podiumRef.current, { backgroundColor: '#0f172a', scale: 2 });
-      canvas.toBlob((blob) => {
+      canvas.toBlob(async (blob) => {
         if (blob) {
           const file = new File([blob], 'scoremaster-result.png', { type: 'image/png' });
-          if (navigator.share && navigator.canShare({ files: [file] })) {
-            navigator.share({ files: [file], title: `Resultado - ${gameConfig.name}`, text: `Confira o resultado da partida de ${gameConfig.name}!` });
-          } else {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = 'scoremaster-result.png'; a.click();
-            URL.revokeObjectURL(url);
+          try {
+            // Tenta compartilhar diretamente sem verificar canShare (muitos browsers suportam mesmo sem esse método retornar true)
+            if (navigator.share) {
+              await navigator.share({ files: [file], title: `Resultado - ${gameConfig.name}`, text: `Confira o resultado da partida de ${gameConfig.name}!` });
+              setIsSharing(false);
+              return;
+            }
+          } catch (shareError) {
+            // Se compartilhamento falhar, faz download como fallback
+            console.log('Share failed, falling back to download:', shareError);
           }
+
+          // Fallback: download da imagem
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'scoremaster-result.png';
+          a.click();
+          URL.revokeObjectURL(url);
         }
         setIsSharing(false);
       });

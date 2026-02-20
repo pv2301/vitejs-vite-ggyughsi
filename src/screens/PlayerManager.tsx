@@ -7,8 +7,17 @@ interface PlayerManagerProps {
   onBack: () => void;
 }
 
-const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
-const AVATARS = ['🎲', '🎮', '👾', '🎯', '🎨', '🎪', '🎭', '🦁'];
+const COLORS = [
+  '#ef4444', '#f97316', '#f59e0b', '#eab308',
+  '#84cc16', '#22c55e', '#10b981', '#14b8a6',
+  '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6',
+  '#a855f7', '#ec4899', '#64748b', '#0ea5e9',
+];
+const AVATARS = [
+  '🎲', '🎮', '👾', '🎯', '🎨', '🎪', '🎭', '🦁',
+  '🐯', '🐺', '🦊', '🐸', '🐧', '🦅', '🐉', '🦄',
+  '⚡', '🔥', '💎', '👑', '🌙', '⭐', '🎸', '🚀',
+];
 
 type Mode =
   | { type: 'list' }
@@ -123,7 +132,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ onBack }) => {
           <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
             Avatar
           </p>
-          <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
+          <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '6px 2px 10px 2px' }}>
             {AVATARS.map(a => (
               <button
                 key={a}
@@ -150,7 +159,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ onBack }) => {
           <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
             Cor
           </p>
-          <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+          <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', padding: '6px 2px 10px 2px' }}>
             {COLORS.map(c => (
               <button
                 key={c}

@@ -1,17 +1,93 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Trash2, Eye, Calendar, Users } from 'lucide-react';
+import { ArrowLeft, Trash2, Eye, Calendar, Users, AlertTriangle } from 'lucide-react';
 import { useGame } from '../context/GameContext';
-import { getGameConfig } from '../config/games';
-import type { GameSession } from '../types';
+import type { GameSession, GameConfig } from '../types';
 
 interface HistoryProps {
   onBack: () => void;
   onViewSession: (session: GameSession) => void;
 }
 
+// Modal de confirmação customizado
+const ConfirmModal: React.FC<{
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ message, onConfirm, onCancel }) => (
+  <>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onCancel}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+        zIndex: 100, backdropFilter: 'blur(4px)',
+      }}
+    />
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.9, y: 20 }}
+      transition={{ type: 'spring', damping: 24, stiffness: 350 }}
+      style={{
+        position: 'fixed', top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 'min(320px, calc(100vw - 40px))',
+        background: '#1e293b',
+        borderRadius: '24px',
+        border: '1.5px solid rgba(255,255,255,0.1)',
+        padding: '28px 24px',
+        zIndex: 101,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px',
+      }}
+    >
+      <div style={{
+        width: '52px', height: '52px', borderRadius: '50%',
+        background: 'rgba(239,68,68,0.12)', border: '1.5px solid rgba(239,68,68,0.3)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <AlertTriangle style={{ width: '24px', height: '24px', color: '#f87171' }} />
+      </div>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '17px', fontWeight: 800, color: 'white', marginBottom: '8px' }}>
+          Confirmar remoção
+        </div>
+        <div style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.5 }}>
+          {message}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+        <button
+          onClick={onCancel}
+          style={{
+            flex: 1, padding: '14px', borderRadius: '14px', border: '1.5px solid rgba(255,255,255,0.1)',
+            background: 'rgba(255,255,255,0.06)', color: '#94a3b8',
+            fontSize: '15px', fontWeight: 700, cursor: 'pointer',
+          }}
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={onConfirm}
+          style={{
+            flex: 1, padding: '14px', borderRadius: '14px', border: 'none',
+            background: 'rgba(239,68,68,0.15)', color: '#f87171',
+            fontSize: '15px', fontWeight: 800, cursor: 'pointer',
+          }}
+        >
+          Sim, remover
+        </button>
+      </div>
+    </motion.div>
+  </>
+);
+
 export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
-  const { gameHistory, deleteHistorySession } = useGame();
+  const { gameHistory, deleteHistorySession, availableGames } = useGame();
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -19,6 +95,15 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit',
     });
+  };
+
+  const getGameConfig = (gameId: string): GameConfig | undefined =>
+    availableGames.find(g => g.id === gameId);
+
+  const FALLBACK_CONFIG: GameConfig = {
+    id: 'unknown', name: 'Jogo removido', themeColor: '#64748b',
+    victoryCondition: 'highest_score', allowNegative: false,
+    description: '', icon: 'dices',
   };
 
   return (
@@ -47,7 +132,7 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
         >
           <ArrowLeft style={{ width: '22px', height: '22px', color: 'white' }} />
         </button>
-        <div>
+        <div style={{ flex: 1 }}>
           <div style={{ fontSize: '28px', fontWeight: 900, color: 'white', letterSpacing: '-0.02em', lineHeight: 1 }}>
             Histórico
           </div>
@@ -55,6 +140,18 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
             {gameHistory.length} {gameHistory.length === 1 ? 'partida salva' : 'partidas salvas'}
           </div>
         </div>
+        {gameHistory.length > 0 && (
+          <button
+            onClick={() => setConfirmClearAll(true)}
+            style={{
+              padding: '8px 14px', borderRadius: '12px', border: '1.5px solid rgba(239,68,68,0.3)',
+              background: 'rgba(239,68,68,0.08)', color: '#f87171',
+              fontSize: '13px', fontWeight: 700, cursor: 'pointer', flexShrink: 0,
+            }}
+          >
+            Limpar tudo
+          </button>
+        )}
       </div>
 
       {/* ── Lista ── */}
@@ -83,8 +180,7 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
         ) : (
           <AnimatePresence>
             {gameHistory.map((session, index) => {
-              const gameConfig = getGameConfig(session.gameId);
-              if (!gameConfig) return null;
+              const gameConfig = getGameConfig(session.gameId) ?? FALLBACK_CONFIG;
 
               const winner = [...session.players].sort((a, b) =>
                 gameConfig.victoryCondition === 'lowest_score'
@@ -112,9 +208,8 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
                       <div style={{
                         width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0,
-                        background: `${gameConfig.themeColor}25`, border: `2px solid ${gameConfig.themeColor}55`,
+                        background: gameConfig.themeColor,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        backgroundColor: gameConfig.themeColor,
                       }}>
                         <span style={{ fontSize: '20px', color: 'white', fontWeight: 900 }}>
                           {gameConfig.name.charAt(0)}
@@ -134,32 +229,34 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
                     </div>
 
                     {/* Vencedor */}
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: '12px',
-                      background: 'rgba(234,179,8,0.08)', borderRadius: '12px',
-                      padding: '10px 14px', marginBottom: '12px',
-                      border: '1px solid rgba(234,179,8,0.2)',
-                    }}>
+                    {winner && (
                       <div style={{
-                        width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '18px', backgroundColor: winner.color,
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        background: 'rgba(234,179,8,0.08)', borderRadius: '12px',
+                        padding: '10px 14px', marginBottom: '12px',
+                        border: '1px solid rgba(234,179,8,0.2)',
                       }}>
-                        {winner.avatar}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '16px', fontWeight: 900, color: 'white' }}>
-                          {winner.name} venceu
+                        <div style={{
+                          width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '18px', backgroundColor: winner.color,
+                        }}>
+                          {winner.avatar}
                         </div>
-                        <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '2px' }}>
-                          {winner.totalScore} pontos • {session.currentRound}{' '}
-                          {session.currentRound === 1 ? 'rodada' : 'rodadas'}
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '16px', fontWeight: 900, color: 'white' }}>
+                            {winner.name} venceu
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '2px' }}>
+                            {winner.totalScore} pontos · {session.currentRound}{' '}
+                            {session.currentRound === 1 ? 'rodada' : 'rodadas'}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '22px', fontWeight: 900, color: gameConfig.themeColor }}>
+                          {winner.totalScore}
                         </div>
                       </div>
-                      <div style={{ fontSize: '22px', fontWeight: 900, color: gameConfig.themeColor }}>
-                        {winner.totalScore}
-                      </div>
-                    </div>
+                    )}
 
                     {/* Rodapé: jogadores + botões */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -184,11 +281,7 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
                       </button>
 
                       <button
-                        onClick={() => {
-                          if (confirm('Deseja remover esta partida do histórico?')) {
-                            deleteHistorySession(session.id);
-                          }
-                        }}
+                        onClick={() => setConfirmDeleteId(session.id)}
                         style={{
                           width: '42px', height: '42px', borderRadius: '12px', border: 'none',
                           cursor: 'pointer', background: 'rgba(239,68,68,0.12)',
@@ -205,6 +298,27 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
           </AnimatePresence>
         )}
       </div>
+
+      {/* ── Modais de confirmação ── */}
+      <AnimatePresence>
+        {confirmDeleteId && (
+          <ConfirmModal
+            message="Deseja remover esta partida do histórico?"
+            onConfirm={() => { deleteHistorySession(confirmDeleteId); setConfirmDeleteId(null); }}
+            onCancel={() => setConfirmDeleteId(null)}
+          />
+        )}
+        {confirmClearAll && (
+          <ConfirmModal
+            message="Deseja remover todas as partidas do histórico? Esta ação não pode ser desfeita."
+            onConfirm={() => {
+              [...gameHistory].forEach(s => deleteHistorySession(s.id));
+              setConfirmClearAll(false);
+            }}
+            onCancel={() => setConfirmClearAll(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -182,7 +182,7 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
   // Auto-advance no modo numérico
   useEffect(() => {
     if (!isWinnerMode && allScored && currentSession.status === 'active') {
-      const timer = setTimeout(() => { nextRound(); }, 800);
+      const timer = setTimeout(() => { nextRound(); }, 3000);
       return () => clearTimeout(timer);
     }
   }, [allScored, isWinnerMode, currentSession.currentRound]);
@@ -251,7 +251,18 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
             background: `${gameConfig.themeColor}18`, border: `1.5px solid ${gameConfig.themeColor}55`,
             borderRadius: '14px', fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: 600,
           }}>
-            Toque em <strong style={{ color: gameConfig.themeColor }}>+1</strong> ao lado do {isTeamMode ? 'time' : 'jogador'} que ganhou a rodada
+            Selecione o vencedor da rodada
+          </div>
+        )}
+
+        {/* ── Banner modo numérico (antes de todos pontuarem) ── */}
+        {!isWinnerMode && !allScored && (
+          <div style={{
+            marginBottom: '16px', padding: '14px 18px',
+            background: 'rgba(96,165,250,0.12)', border: '1.5px solid rgba(96,165,250,0.4)',
+            borderRadius: '14px', fontSize: '14px', color: '#60a5fa', fontWeight: 700, textAlign: 'center',
+          }}>
+            Informe os pontos da rodada
           </div>
         )}
 

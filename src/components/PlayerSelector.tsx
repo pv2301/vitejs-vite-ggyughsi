@@ -133,7 +133,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
           {/* Avatar */}
           <div>
             <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Avatar</p>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '6px 2px 10px 2px' }}>
               {AVATARS.map(avatar => (
                 <button
                   key={avatar}
@@ -158,7 +158,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
           {/* Cor */}
           <div>
             <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Cor</p>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '6px 2px 10px 2px' }}>
               {COLORS.map(color => (
                 <button
                   key={color}
@@ -389,7 +389,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
               {/* Avatar */}
               <div>
                 <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Avatar</p>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '6px 2px 10px 2px' }}>
                   {AVATARS.map(avatar => (
                     <button
                       key={avatar}
@@ -414,7 +414,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
               {/* Cor */}
               <div>
                 <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Cor</p>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '6px 2px 10px 2px' }}>
                   {COLORS.map(color => (
                     <button
                       key={color}

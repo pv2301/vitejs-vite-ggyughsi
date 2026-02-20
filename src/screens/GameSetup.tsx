@@ -4,6 +4,7 @@ import { ArrowLeft, Play, ChevronDown, ChevronUp, Camera, Trash2, Users, Plus, X
 import { gameIconMap } from './GameEditor';
 import * as Icons from 'lucide-react';
 import { PlayerSelector } from '../components/PlayerSelector';
+import { PickerSheet } from '../components/PickerSheet';
 import { useGame } from '../context/GameContext';
 import type { Player, Team, VictoryCondition, ScoringMode } from '../types';
 
@@ -43,7 +44,6 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
   const [editVictory, setEditVictory] = useState<VictoryCondition>(gameConfig?.victoryCondition ?? 'highest_score');
   const [editMeta, setEditMeta] = useState(gameConfig?.winningScore?.toString() ?? '');
   const [editAllowNegative, setEditAllowNegative] = useState(gameConfig?.allowNegative ?? true);
-  const [editRoundBased, setEditRoundBased] = useState(gameConfig?.roundBased ?? true);
   const [editScoringMode, setEditScoringMode] = useState<ScoringMode>(gameConfig?.scoringMode ?? 'numeric');
   const [rulesDirty, setRulesDirty] = useState(false);
 
@@ -79,7 +79,6 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
       victoryCondition: editVictory,
       winningScore: editMeta ? parseInt(editMeta, 10) : undefined,
       allowNegative: editAllowNegative,
-      roundBased: editRoundBased,
       scoringMode: editScoringMode,
     });
     setRulesDirty(false);
@@ -155,20 +154,6 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
   const handleDeleteGame = () => {
     deleteCustomGame(gameId);
     onBack();
-  };
-
-  const selectStyle: React.CSSProperties = {
-    background: '#0f172a',
-    border: '1.5px solid #334155',
-    borderRadius: '10px',
-    padding: '8px 12px',
-    fontSize: '14px',
-    color: 'white',
-    fontWeight: 700,
-    outline: 'none',
-    cursor: 'pointer',
-    appearance: 'none',
-    WebkitAppearance: 'none',
   };
 
   return (
@@ -273,11 +258,18 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
                   {canEditAllRules ? (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '16px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
                       <span style={{ color: '#94a3b8', fontSize: '15px' }}>Vitória</span>
-                      <select value={editVictory} onChange={e => { setEditVictory(e.target.value as VictoryCondition); setRulesDirty(true); }} style={selectStyle}>
-                        <option value="highest_score">Maior pontuação vence</option>
-                        <option value="lowest_score">Menor pontuação vence</option>
-                        <option value="target_score">Atingir pontuação alvo</option>
-                      </select>
+                      <div style={{ width: '160px' }}>
+                        <PickerSheet
+                          value={editVictory}
+                          options={[
+                            { value: 'highest_score', label: 'Maior pontuação vence' },
+                            { value: 'lowest_score', label: 'Menor pontuação vence' },
+                            { value: 'target_score', label: 'Atingir pontuação alvo' },
+                          ]}
+                          onChange={(val) => { setEditVictory(val as VictoryCondition); setRulesDirty(true); }}
+                          themeColor={gameConfig.themeColor}
+                        />
+                      </div>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '16px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
@@ -311,22 +303,20 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
                     </div>
                   )}
 
-                  {/* Sistema — editável para todos os jogos */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                    <span style={{ color: '#94a3b8', fontSize: '15px' }}>Sistema</span>
-                    <select value={editRoundBased ? 'rounds' : 'continuous'} onChange={e => { setEditRoundBased(e.target.value === 'rounds'); setRulesDirty(true); }} style={selectStyle}>
-                      <option value="rounds">Por rodadas</option>
-                      <option value="continuous">Pontuação contínua</option>
-                    </select>
-                  </div>
-
                   {/* Pontuação — editável para todos os jogos */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', paddingBottom: '0' }}>
                     <span style={{ color: '#94a3b8', fontSize: '15px' }}>Pontuação</span>
-                    <select value={editScoringMode} onChange={e => { setEditScoringMode(e.target.value as ScoringMode); setRulesDirty(true); }} style={selectStyle}>
-                      <option value="numeric">Numérica por rodada</option>
-                      <option value="winner_takes_all">Vencedor da rodada (+1)</option>
-                    </select>
+                    <div style={{ width: '160px' }}>
+                      <PickerSheet
+                        value={editScoringMode}
+                        options={[
+                          { value: 'numeric', label: 'Numérica por rodada' },
+                          { value: 'winner_takes_all', label: 'Vencedor da rodada' },
+                        ]}
+                        onChange={(val) => { setEditScoringMode(val as ScoringMode); setRulesDirty(true); }}
+                        themeColor={gameConfig.themeColor}
+                      />
+                    </div>
                   </div>
 
                   {rulesDirty && (

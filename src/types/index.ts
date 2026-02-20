@@ -8,7 +8,7 @@ export interface GameConfig {
   victoryCondition: VictoryCondition;
   winningScore?: number;
   allowNegative: boolean;
-  roundBased: boolean;
+  roundBased?: boolean;
   scoringMode?: ScoringMode; // 'numeric' (padrão) ou 'winner_takes_all' (+1 só para o vencedor)
   description: string;
   icon: string;
@@ -64,6 +64,11 @@ export interface Tournament {
   status: 'active' | 'finished';
 }
 
+export interface UserTag {
+  label: string;
+  color: string;
+}
+
 export interface AppState {
   currentSession: GameSession | null;
   savedPlayers: Omit<Player, 'totalScore' | 'roundScores' | 'position'>[];
@@ -73,4 +78,5 @@ export interface AppState {
   customGames: GameConfig[];
   gameOverrides: Record<string, Partial<GameConfig>>;
   gameOrder: string[];
+  userTag?: UserTag;
 }

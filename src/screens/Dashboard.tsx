@@ -5,6 +5,13 @@ import { GameCard } from '../components/GameCard';
 import { AppShareModal } from '../components/AppShareModal';
 import { useGame } from '../context/GameContext';
 
+const COLORS = [
+  '#ef4444', '#f97316', '#f59e0b', '#eab308',
+  '#84cc16', '#22c55e', '#10b981', '#14b8a6',
+  '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6',
+  '#a855f7', '#ec4899', '#64748b', '#0ea5e9',
+];
+
 interface DashboardProps {
   onSelectGame: (gameId: string) => void;
   onOpenHistory: () => void;
@@ -20,10 +27,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenPlayers,
   onOpenNewGame,
 }) => {
-  const { gameHistory, darkMode, toggleDarkMode, availableGames, reorderGames } = useGame();
+  const { gameHistory, darkMode, toggleDarkMode, availableGames, reorderGames, userTag, updateUserTag } = useGame();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAppShare, setShowAppShare] = useState(false);
   const [reorderMode, setReorderMode] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [editingTag, setEditingTag] = useState(false);
+  const [tagInput, setTagInput] = useState(userTag?.label || '');
+  const [tagColor, setTagColor] = useState(userTag?.color || COLORS[0]);
 
   // Long press logic
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -59,6 +70,30 @@ export const Dashboard: React.FC<DashboardProps> = ({
     reorderGames(index, index + 1);
   };
 
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (targetIndex: number) => {
+    if (draggedIndex !== null && draggedIndex !== targetIndex) {
+      reorderGames(draggedIndex, targetIndex);
+    }
+    setDraggedIndex(null);
+  };
+
+  const handleTagSave = () => {
+    if (tagInput.trim()) {
+      updateUserTag({ label: tagInput.trim(), color: tagColor });
+    } else {
+      updateUserTag(undefined);
+    }
+    setEditingTag(false);
+  };
+
   return (
     <div
       style={{
@@ -73,7 +108,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* ── Header ── */}
       <div style={{ padding: '0 16px 8px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '12px' }}>
         {/* Título */}
-        <div style={{ paddingBottom: '4px' }}>
+        <div style={{ paddingBottom: '4px', flex: 1 }}>
           <motion.div
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -81,14 +116,73 @@ export const Dashboard: React.FC<DashboardProps> = ({
           >
             ScoreGames
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            style={{ fontSize: '14px', color: reorderMode ? '#f59e0b' : '#64748b', marginTop: '4px', fontWeight: 500, transition: 'color 0.2s' }}
-          >
-            {reorderMode ? 'Reordenando jogos...' : 'Escolha seu jogo'}
-          </motion.div>
+          {editingTag ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}
+            >
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Personalize"
+                  value={tagInput}
+                  onChange={e => setTagInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleTagSave(); if (e.key === 'Escape') setEditingTag(false); }}
+                  style={{
+                    flex: 1, maxWidth: '200px', padding: '8px 12px', borderRadius: '8px',
+                    background: '#1e293b', border: `2px solid ${tagColor}`,
+                    fontSize: '13px', color: 'white', fontWeight: 600,
+                    outline: 'none', transition: 'border-color 0.2s',
+                  }}
+                />
+                <button
+                  onClick={handleTagSave}
+                  style={{
+                    padding: '6px 10px', borderRadius: '6px', background: tagColor,
+                    border: 'none', color: 'white', fontSize: '12px', fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  OK
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', padding: '4px 0' }}>
+                {COLORS.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => setTagColor(color)}
+                    style={{
+                      width: '28px', height: '28px', borderRadius: '50%',
+                      backgroundColor: color, border: 'none', cursor: 'pointer',
+                      outline: tagColor === color ? '2px solid white' : '2px solid transparent',
+                      outlineOffset: '2px',
+                      transform: tagColor === color ? 'scale(1.15)' : 'scale(1)',
+                      transition: 'all 0.2s',
+                    }}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          ) : (
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              onClick={() => { setEditingTag(true); setTagInput(userTag?.label || ''); setTagColor(userTag?.color || COLORS[0]); }}
+              style={{
+                marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '6px 12px', borderRadius: '999px',
+                border: `2px solid ${userTag ? userTag.color : '#334155'}`,
+                background: userTag ? `${userTag.color}15` : 'transparent',
+                fontSize: '12px', fontWeight: 700, color: userTag ? userTag.color : '#64748b',
+                cursor: 'pointer', transition: 'all 0.2s',
+              }}
+            >
+              {userTag ? userTag.label : 'Escolha seu jogo'}
+            </motion.button>
+          )}
         </div>
 
         {/* Botões */}
@@ -233,9 +327,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
               )}
             </AnimatePresence>
 
-            {/* Card — com long press */}
+            {/* Card — com long press e drag-and-drop */}
             <div
-              style={{ flex: 1, minWidth: 0, position: 'relative' }}
+              draggable={reorderMode}
+              onDragStart={() => handleDragStart(index)}
+              onDragOver={handleDragOver}
+              onDrop={() => handleDrop(index)}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                position: 'relative',
+                opacity: draggedIndex === index ? 0.5 : 1,
+                transition: 'opacity 0.2s',
+              }}
               onMouseDown={reorderMode ? undefined : startLongPress}
               onMouseUp={cancelLongPress}
               onMouseLeave={cancelLongPress}
@@ -271,8 +375,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* ── Footer ── */}
-      <div style={{ textAlign: 'center', padding: '16px', color: '#334155', fontSize: '12px' }}>
-        Desenvolvido por PV
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', color: '#334155', fontSize: '12px' }}>
+        <span style={{ flex: 1, textAlign: 'center' }}>Desenvolvido por PV</span>
+        <span style={{ flexShrink: 0 }}>v1.0.3</span>
       </div>
 
       {/* ── Bottom Sheet Menu ── */}

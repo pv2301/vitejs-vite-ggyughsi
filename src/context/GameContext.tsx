@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { AppState, GameSession, Player, GameConfig, Team, Tournament } from '../types';
+import type { AppState, GameSession, Player, GameConfig, Team, Tournament, UserTag } from '../types';
 import { GAME_CONFIGS } from '../config/games';
 
 interface GameContextType extends AppState {
@@ -26,6 +26,7 @@ interface GameContextType extends AppState {
   updateGameOverride: (gameId: string, overrides: Partial<GameConfig>) => void;
   updateGameImage: (gameId: string, imageBase64: string) => void;
   reorderGames: (fromIndex: number, toIndex: number) => void;
+  updateUserTag: (userTag: UserTag | undefined) => void;
 }
 
 const STORAGE_KEY = 'scoremaster_data';
@@ -322,6 +323,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
+  const updateUserTag = (userTag: UserTag | undefined) => {
+    setState(prev => ({ ...prev, userTag }));
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -348,6 +353,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updateGameOverride,
         updateGameImage,
         reorderGames,
+        updateUserTag,
       }}
     >
       {children}
