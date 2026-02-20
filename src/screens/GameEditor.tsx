@@ -6,6 +6,7 @@ import {
   Gamepad2, Dices, Crown, Target, Puzzle, Swords,
 } from 'lucide-react';
 import * as Icons from 'lucide-react';
+import { PickerSheet } from '../components/PickerSheet';
 import { useGame } from '../context/GameContext';
 import type { GameConfig, VictoryCondition, ScoringMode } from '../types';
 
@@ -77,7 +78,6 @@ export const GameEditor: React.FC<GameEditorProps> = ({ onBack }) => {
   const [victoryCondition, setVictoryCondition] = useState<VictoryCondition>('highest_score');
   const [winningScore, setWinningScore] = useState('');
   const [allowNegative, setAllowNegative] = useState(true);
-  const [roundBased, setRoundBased] = useState(true);
   const [scoringMode, setScoringMode] = useState<ScoringMode>('numeric');
 
   const canCreate = name.trim().length > 0;
@@ -102,7 +102,6 @@ export const GameEditor: React.FC<GameEditorProps> = ({ onBack }) => {
       victoryCondition,
       winningScore: winningScore ? parseInt(winningScore, 10) : undefined,
       allowNegative,
-      roundBased,
       scoringMode,
       description: name.trim(),
       icon: selectedIcon,
@@ -111,21 +110,6 @@ export const GameEditor: React.FC<GameEditorProps> = ({ onBack }) => {
     };
     addCustomGame(newGame);
     onBack();
-  };
-
-  const selectStyle = {
-    width: '100%',
-    background: '#1e293b',
-    border: '1.5px solid #334155',
-    borderRadius: '12px',
-    padding: '14px 16px',
-    fontSize: '15px',
-    color: 'white',
-    fontWeight: 600,
-    outline: 'none',
-    cursor: 'pointer',
-    appearance: 'none' as const,
-    WebkitAppearance: 'none' as const,
   };
 
   return (
@@ -303,15 +287,18 @@ export const GameEditor: React.FC<GameEditorProps> = ({ onBack }) => {
             {/* Vitória */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid #1e293b' }}>
               <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: 500 }}>Vitória</span>
-              <select
-                value={victoryCondition}
-                onChange={e => setVictoryCondition(e.target.value as VictoryCondition)}
-                style={{ ...selectStyle, width: 'auto', padding: '8px 12px', fontSize: '14px', fontWeight: 700, color: 'white', background: '#0f172a', border: '1.5px solid #334155', borderRadius: '10px' }}
-              >
-                <option value="highest_score">Maior pontuação vence</option>
-                <option value="lowest_score">Menor pontuação vence</option>
-                <option value="target_score">Atingir pontuação alvo</option>
-              </select>
+              <div style={{ width: '160px' }}>
+                <PickerSheet
+                  value={victoryCondition}
+                  options={[
+                    { value: 'highest_score', label: 'Maior pontuação vence' },
+                    { value: 'lowest_score', label: 'Menor pontuação vence' },
+                    { value: 'target_score', label: 'Atingir pontuação alvo' },
+                  ]}
+                  onChange={(val) => setVictoryCondition(val as VictoryCondition)}
+                  themeColor={themeColor}
+                />
+              </div>
             </div>
 
             {/* Meta */}
@@ -346,30 +333,20 @@ export const GameEditor: React.FC<GameEditorProps> = ({ onBack }) => {
               </button>
             </div>
 
-            {/* Sistema */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid #1e293b' }}>
-              <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: 500 }}>Sistema</span>
-              <select
-                value={roundBased ? 'rounds' : 'continuous'}
-                onChange={e => setRoundBased(e.target.value === 'rounds')}
-                style={{ ...selectStyle, width: 'auto', padding: '8px 12px', fontSize: '14px', fontWeight: 700, color: 'white', background: '#0f172a', border: '1.5px solid #334155', borderRadius: '10px' }}
-              >
-                <option value="rounds">Por rodadas</option>
-                <option value="continuous">Pontuação contínua</option>
-              </select>
-            </div>
-
             {/* Modo de pontuação */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px' }}>
               <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: 500 }}>Pontuação</span>
-              <select
-                value={scoringMode}
-                onChange={e => setScoringMode(e.target.value as ScoringMode)}
-                style={{ ...selectStyle, width: 'auto', padding: '8px 12px', fontSize: '14px', fontWeight: 700, color: 'white', background: '#0f172a', border: '1.5px solid #334155', borderRadius: '10px' }}
-              >
-                <option value="numeric">Numérica por rodada</option>
-                <option value="winner_takes_all">Vencedor da rodada (+1)</option>
-              </select>
+              <div style={{ width: '160px' }}>
+                <PickerSheet
+                  value={scoringMode}
+                  options={[
+                    { value: 'numeric', label: 'Numérica por rodada' },
+                    { value: 'winner_takes_all', label: 'Vencedor da rodada' },
+                  ]}
+                  onChange={(val) => setScoringMode(val as ScoringMode)}
+                  themeColor={themeColor}
+                />
+              </div>
             </div>
           </div>
         </div>
