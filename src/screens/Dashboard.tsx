@@ -272,7 +272,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               paddingBottom: '4px', fontWeight: 500,
             }}
           >
-            Segure um card para reordenar
+          
           </motion.div>
         )}
       </AnimatePresence>
@@ -376,8 +376,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* ── Footer ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', color: '#334155', fontSize: '12px' }}>
-        <span style={{ flex: 1, textAlign: 'center' }}>Desenvolvido por PV</span>
-        <span style={{ flexShrink: 0 }}>v1.0.3</span>
+        <span style={{ flex: 1, textAlign: 'center' }}>Designed by PV</span>
       </div>
 
       {/* ── Bottom Sheet Menu ── */}
