@@ -18,18 +18,21 @@ interface TeamRowProps {
   mode: 'numeric' | 'winner';
   showInput: boolean;
   themeColor: string;
+  allowNegative?: boolean;
   onScoreSubmit?: (score: number) => void;
   onWinnerSelect?: () => void;
 }
 
-const TeamRow: React.FC<TeamRowProps> = ({ team, isLeader, isLast, mode, showInput, themeColor, onScoreSubmit, onWinnerSelect }) => {
+const TeamRow: React.FC<TeamRowProps> = ({ team, isLeader, isLast, mode, showInput, themeColor, allowNegative = false, onScoreSubmit, onWinnerSelect }) => {
   const [inputValue, setInputValue] = React.useState('');
+  const [isNegative, setIsNegative] = React.useState(false);
 
   const handleSubmit = () => {
-    const score = parseFloat(inputValue);
-    if (!isNaN(score) && onScoreSubmit) {
-      onScoreSubmit(score);
+    const raw = parseFloat(inputValue);
+    if (!isNaN(raw) && onScoreSubmit) {
+      onScoreSubmit(isNegative ? -Math.abs(raw) : raw);
       setInputValue('');
+      setIsNegative(false);
     }
   };
 
@@ -112,19 +115,50 @@ const TeamRow: React.FC<TeamRowProps> = ({ team, isLeader, isLast, mode, showInp
       {/* Input numérico */}
       {mode === 'numeric' && showInput && (
         <div style={{ display: 'flex', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
-          <input
-            type="number"
-            value={inputValue}
-            onChange={e => setInputValue(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
-            placeholder="Pontos da rodada"
-            style={{
-              flex: 1, minWidth: 0, padding: '14px',
-              background: 'rgba(15,23,42,0.7)', color: 'white', fontSize: '17px', fontWeight: 700,
-              borderRadius: '14px', border: inputValue ? `2px solid ${themeColor}` : '2px solid rgba(71,85,105,0.6)',
-              outline: 'none', boxSizing: 'border-box',
-            }}
-          />
+          <div style={{
+            flex: 1, minWidth: 0, display: 'flex', alignItems: 'stretch',
+            background: 'rgba(15,23,42,0.7)', borderRadius: '14px',
+            border: inputValue
+              ? `2px solid ${isNegative ? '#ef4444' : themeColor}`
+              : '2px solid rgba(71,85,105,0.6)',
+            overflow: 'hidden', transition: 'border-color 0.15s', boxSizing: 'border-box',
+          }}>
+            {allowNegative && (
+              <button
+                onClick={() => setIsNegative(n => !n)}
+                style={{
+                  flexShrink: 0, width: '44px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: isNegative ? 'rgba(239,68,68,0.18)' : 'transparent',
+                  border: 'none',
+                  borderRight: isNegative
+                    ? '1.5px solid rgba(239,68,68,0.35)'
+                    : '1.5px solid rgba(71,85,105,0.4)',
+                  cursor: 'pointer',
+                  color: isNegative ? '#f87171' : '#475569',
+                  fontSize: '22px', fontWeight: 900, lineHeight: 1,
+                  transition: 'background 0.15s, color 0.15s', paddingBottom: '2px',
+                }}
+              >
+                −
+              </button>
+            )}
+            <input
+              type="text"
+              inputMode="numeric"
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value.replace(/[^0-9.]/g, ''))}
+              onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
+              placeholder="Pontos da rodada"
+              style={{
+                flex: 1, minWidth: 0, padding: '14px',
+                background: 'transparent',
+                color: isNegative ? '#f87171' : 'white',
+                fontSize: '17px', fontWeight: 700,
+                border: 'none', outline: 'none', boxSizing: 'border-box',
+              }}
+            />
+          </div>
           <button
             onClick={handleSubmit}
             disabled={!inputValue}
@@ -251,7 +285,7 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
             background: `${gameConfig.themeColor}18`, border: `1.5px solid ${gameConfig.themeColor}55`,
             borderRadius: '14px', fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: 600,
           }}>
-            Selecione o vencedor da rodada
+            Selecione o <strong style={{ color: '#22c55e', fontSize: '16px', fontWeight: 900 }}>+</strong> para pontuar
           </div>
         )}
 
@@ -315,6 +349,7 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
                   mode={isWinnerMode ? 'winner' : 'numeric'}
                   showInput={isWinnerMode ? true : team.roundScores.length < currentSession.currentRound}
                   themeColor={gameConfig.themeColor}
+                  allowNegative={gameConfig.allowNegative}
                   onScoreSubmit={(score) => updateTeamScore(team.id, score)}
                   onWinnerSelect={() => handleWinnerSelect(team.id)}
                 />
@@ -330,6 +365,7 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
                   onWinnerSelect={() => handleWinnerSelect(player.id)}
                   showInput={isWinnerMode ? true : player.roundScores.length < currentSession.currentRound}
                   themeColor={gameConfig.themeColor}
+                  allowNegative={gameConfig.allowNegative}
                 />
               ))
             }

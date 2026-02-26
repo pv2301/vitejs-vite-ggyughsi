@@ -12,6 +12,7 @@ interface PlayerRowProps {
   mode?: 'numeric' | 'winner';
   showInput?: boolean;
   themeColor: string;
+  allowNegative?: boolean;
 }
 
 export const PlayerRow: React.FC<PlayerRowProps> = ({
@@ -23,14 +24,17 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
   mode = 'numeric',
   showInput = true,
   themeColor,
+  allowNegative = false,
 }) => {
   const [inputValue, setInputValue] = React.useState('');
+  const [isNegative, setIsNegative] = React.useState(false);
 
   const handleSubmit = () => {
-    const score = parseFloat(inputValue);
-    if (!isNaN(score) && onScoreSubmit) {
-      onScoreSubmit(score);
+    const raw = parseFloat(inputValue);
+    if (!isNaN(raw) && onScoreSubmit) {
+      onScoreSubmit(isNegative ? -Math.abs(raw) : raw);
       setInputValue('');
+      setIsNegative(false);
     }
   };
 
@@ -131,27 +135,69 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
       {/* ── Score input (modo numeric) ── */}
       {mode === 'numeric' && showInput && (
         <div style={{ display: 'flex', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
-          <input
-            type="number"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Pontos da rodada"
-            style={{
-              flex: 1,
-              minWidth: 0,
-              padding: '14px 14px',
-              background: 'rgba(15,23,42,0.7)',
-              color: 'white',
-              fontSize: '17px',
-              fontWeight: 700,
-              borderRadius: '14px',
-              border: inputValue ? `2px solid ${themeColor}` : '2px solid rgba(71,85,105,0.6)',
-              outline: 'none',
-              transition: 'border-color 0.15s',
-              boxSizing: 'border-box',
-            }}
-          />
+          {/* Input container com toggle negativo */}
+          <div style={{
+            flex: 1,
+            minWidth: 0,
+            display: 'flex',
+            alignItems: 'stretch',
+            background: 'rgba(15,23,42,0.7)',
+            borderRadius: '14px',
+            border: inputValue
+              ? `2px solid ${isNegative ? '#ef4444' : themeColor}`
+              : '2px solid rgba(71,85,105,0.6)',
+            overflow: 'hidden',
+            transition: 'border-color 0.15s',
+            boxSizing: 'border-box',
+          }}>
+            {/* Botão toggle "-" (apenas quando allowNegative) */}
+            {allowNegative && (
+              <button
+                onClick={() => setIsNegative(n => !n)}
+                style={{
+                  flexShrink: 0,
+                  width: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: isNegative ? 'rgba(239,68,68,0.18)' : 'transparent',
+                  border: 'none',
+                  borderRight: isNegative
+                    ? '1.5px solid rgba(239,68,68,0.35)'
+                    : '1.5px solid rgba(71,85,105,0.4)',
+                  cursor: 'pointer',
+                  color: isNegative ? '#f87171' : '#475569',
+                  fontSize: '22px',
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  transition: 'background 0.15s, color 0.15s',
+                  paddingBottom: '2px',
+                }}
+              >
+                −
+              </button>
+            )}
+            <input
+              type="text"
+              inputMode="numeric"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value.replace(/[^0-9.]/g, ''))}
+              onKeyDown={handleKeyDown}
+              placeholder="Pontos da rodada"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                padding: '14px',
+                background: 'transparent',
+                color: isNegative ? '#f87171' : 'white',
+                fontSize: '17px',
+                fontWeight: 700,
+                border: 'none',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
           <button
             onClick={handleSubmit}
             disabled={!inputValue}
