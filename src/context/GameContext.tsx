@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { AppState, GameSession, Player, GameConfig, Team, Tournament, UserTag } from '../types';
+import type { AppState, GameSession, Player, GameConfig, Team, Tournament, UserTag, Locale } from '../types';
+import { detectLocale } from '../i18n/translations';
 import { GAME_CONFIGS } from '../config/games';
 
 interface GameContextType extends AppState {
@@ -27,6 +28,8 @@ interface GameContextType extends AppState {
   updateGameImage: (gameId: string, imageBase64: string) => void;
   reorderGames: (fromIndex: number, toIndex: number) => void;
   updateUserTag: (userTag: UserTag | undefined) => void;
+  undoLastScore: (participantId: string) => void;
+  setLocale: (locale: Locale) => void;
 }
 
 const STORAGE_KEY = 'scoremaster_data';
@@ -40,6 +43,7 @@ const defaultState: AppState = {
   customGames: [],
   gameOverrides: {},
   gameOrder: [],
+  locale: detectLocale(),
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -56,6 +60,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           customGames: parsed.customGames ?? [],
           gameOverrides: parsed.gameOverrides ?? {},
           gameOrder: parsed.gameOrder ?? [],
+          locale: (parsed.locale as Locale) ?? detectLocale(),
           // migra torneios antigos sem playerIds/status/gamesPlayed
           tournaments: (parsed.tournaments ?? []).map((t: any) => ({
             status: 'active',
@@ -87,14 +92,22 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     ...state.customGames,
   ];
 
-  const availableGames: GameConfig[] = state.gameOrder.length > 0
-    ? [
-        ...state.gameOrder
-          .map(id => baseGames.find(g => g.id === id))
-          .filter((g): g is GameConfig => g !== undefined),
-        ...baseGames.filter(g => !state.gameOrder.includes(g.id)),
-      ]
-    : baseGames;
+  // Normaliza a ordem: mantém jogos salvos na sequência do usuário e
+  // garante que jogos novos (adicionados ao GAME_CONFIGS depois) apareçam sempre.
+  const allBaseIds = baseGames.map(g => g.id);
+  const validStoredOrder = state.gameOrder.filter(id => allBaseIds.includes(id));
+  const missingIds = allBaseIds.filter(id => !validStoredOrder.includes(id));
+  const normalizedOrder = [...validStoredOrder, ...missingIds];
+
+  const availableGames: GameConfig[] =
+    normalizedOrder.length > 0
+      ? normalizedOrder.map((id: string) => baseGames.find(g => g.id === id)!).filter(Boolean)
+      : baseGames;
+
+  // DEBUG TEMPORÁRIO — remover depois
+  console.log('[DEBUG] gameOrder:', state.gameOrder);
+  console.log('[DEBUG] allBaseIds:', allBaseIds);
+  console.log('[DEBUG] availableGames:', availableGames.map(g => g.id));
 
   const getEffectiveConfig = (gameId: string): GameConfig | undefined =>
     availableGames.find(g => g.id === gameId);
@@ -327,6 +340,34 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setState(prev => ({ ...prev, userTag }));
   };
 
+  const setLocale = (locale: Locale) => {
+    setState(prev => ({ ...prev, locale }));
+  };
+
+  const undoLastScore = (participantId: string) => {
+    setState(prev => {
+      if (!prev.currentSession) return prev;
+      const gameConfig = getEffectiveConfig(prev.currentSession.gameId);
+      if (!gameConfig) return prev;
+      const isTeamMode = !!prev.currentSession.teams?.length;
+      if (isTeamMode) {
+        const updatedTeams = (prev.currentSession.teams ?? []).map(team => {
+          if (team.id !== participantId) return team;
+          const newRoundScores = team.roundScores.slice(0, -1);
+          return { ...team, roundScores: newRoundScores, totalScore: newRoundScores.reduce((a, b) => a + b, 0) };
+        });
+        return { ...prev, currentSession: { ...prev.currentSession, teams: calcTeamPositions(updatedTeams, gameConfig.victoryCondition) } };
+      } else {
+        const updatedPlayers = prev.currentSession.players.map(player => {
+          if (player.id !== participantId) return player;
+          const newRoundScores = player.roundScores.slice(0, -1);
+          return { ...player, roundScores: newRoundScores, totalScore: newRoundScores.reduce((a, b) => a + b, 0) };
+        });
+        return { ...prev, currentSession: { ...prev.currentSession, players: calcPositions(updatedPlayers, gameConfig.victoryCondition) } };
+      }
+    });
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -354,6 +395,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updateGameImage,
         reorderGames,
         updateUserTag,
+        undoLastScore,
+        setLocale,
       }}
     >
       {children}

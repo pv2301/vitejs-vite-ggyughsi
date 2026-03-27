@@ -1,5 +1,6 @@
 export type VictoryCondition = 'lowest_score' | 'highest_score' | 'target_score';
-export type ScoringMode = 'numeric' | 'winner_takes_all';
+export type Locale = 'en' | 'pt-BR';
+export type ScoringMode = 'numeric' | 'winner_takes_all' | 'duelo';
 
 export interface GameConfig {
   id: string;
@@ -14,6 +15,10 @@ export interface GameConfig {
   icon: string;
   imageBase64?: string;
   isCustom?: boolean;
+  isBuiltin?: boolean;
+  timerEnabled?: boolean;
+  duelPointsPerTap?: number;
+  duelTimerEnabled?: boolean;
 }
 
 export interface Player {
@@ -79,4 +84,5 @@ export interface AppState {
   gameOverrides: Record<string, Partial<GameConfig>>;
   gameOrder: string[];
   userTag?: UserTag;
+  locale: Locale;
 }

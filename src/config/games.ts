@@ -1,5 +1,6 @@
 import type { GameConfig } from '../types';
 
+// v2
 export const GAME_CONFIGS: GameConfig[] = [
   {
     id: 'skyjo',
@@ -49,6 +50,19 @@ export const GAME_CONFIGS: GameConfig[] = [
     allowNegative: true,
     description: 'Para qualquer jogo de mesa',
     icon: 'dices',
+  },
+  {
+    id: 'duelo',
+    name: 'Modo Duelo',
+    themeColor: '#f97316',
+    victoryCondition: 'highest_score',
+    allowNegative: false,
+    scoringMode: 'duelo',
+    description: 'Placar rápido para 2 participantes',
+    icon: 'zap',
+    isBuiltin: true,
+    duelPointsPerTap: 1,
+    duelTimerEnabled: false,
   },
 ];
 

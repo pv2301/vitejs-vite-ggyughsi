@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Plus, Pencil, Trash2, Check, X, UserPlus, Users } from 'lucide-react';
 import { useGame } from '../context/GameContext';
+import { useTranslation } from '../i18n/useTranslation';
 
 interface PlayerManagerProps {
   onBack: () => void;
@@ -26,6 +27,7 @@ type Mode =
 
 export const PlayerManager: React.FC<PlayerManagerProps> = ({ onBack }) => {
   const { savedPlayers, addSavedPlayer, renameSavedPlayer, removeSavedPlayer } = useGame();
+  const t = useTranslation();
   const [mode, setMode] = useState<Mode>({ type: 'list' });
 
   // Form state (add)
@@ -102,10 +104,10 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ onBack }) => {
           </div>
           <div>
             <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
-              {isAdd ? 'Novo Jogador' : 'Editando'}
+              {isAdd ? t.playerManager.newPlayer : t.playerManager.editing}
             </p>
             <p style={{ fontSize: '18px', fontWeight: 900, color: name.trim() ? 'white' : '#475569' }}>
-              {name.trim() || 'Nome do jogador'}
+              {name.trim() || t.playerSelector.namePlaceholder}
             </p>
           </div>
         </div>
@@ -114,7 +116,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ onBack }) => {
         <input
           autoFocus
           type="text"
-          placeholder="Nome do Jogador"
+          placeholder={t.playerSelector.namePlaceholder}
           value={name}
           onChange={e => setName(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleConfirm(); if (e.key === 'Escape') setMode({ type: 'list' }); }}
@@ -188,7 +190,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ onBack }) => {
             }}
           >
             <X style={{ width: '18px', height: '18px' }} />
-            Cancelar
+            {t.common.cancel}
           </button>
           <motion.button
             whileTap={{ scale: 0.97 }}
@@ -203,7 +205,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ onBack }) => {
             }}
           >
             <Check style={{ width: '20px', height: '20px' }} />
-            {isAdd ? 'ADICIONAR' : 'SALVAR'}
+            {isAdd ? t.playerManager.add : t.common.save.toUpperCase()}
           </motion.button>
         </div>
       </motion.div>
@@ -226,10 +228,10 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ onBack }) => {
         }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>👥</div>
           <p style={{ fontSize: '18px', fontWeight: 700, color: '#64748b', marginBottom: '8px' }}>
-            Nenhum jogador cadastrado
+            {t.playerManager.empty}
           </p>
           <p style={{ fontSize: '14px', color: '#475569' }}>
-            Adicione jogadores para reutilizá-los em partidas futuras
+            {t.playerManager.emptyHint}
           </p>
         </div>
       ) : (
@@ -303,7 +305,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ onBack }) => {
         }}
       >
         <UserPlus style={{ width: '22px', height: '22px' }} />
-        Adicionar Jogador
+        {t.playerManager.addPlayer}
       </motion.button>
     </motion.div>
   );
@@ -335,11 +337,11 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ onBack }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Users style={{ width: '20px', height: '20px', color: '#60a5fa' }} />
             <span style={{ fontSize: '22px', fontWeight: 900, color: 'white', letterSpacing: '-0.01em' }}>
-              Jogadores
+              {t.playerManager.title}
             </span>
           </div>
           <p style={{ fontSize: '13px', color: '#64748b', fontWeight: 500, marginTop: '2px' }}>
-            {savedPlayers.length} {savedPlayers.length === 1 ? 'cadastrado' : 'cadastrados'}
+            {savedPlayers.length}
           </p>
         </div>
       </div>

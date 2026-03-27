@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, UserPlus, Pencil, Check, Trash2 } from 'lucide-react';
 import type { Player } from '../types';
 import { useGame } from '../context/GameContext';
+import { useTranslation } from '../i18n/useTranslation';
 
 interface PlayerSelectorProps {
   selectedPlayers: Omit<Player, 'totalScore' | 'roundScores' | 'position'>[];
@@ -10,6 +11,7 @@ interface PlayerSelectorProps {
   onAddPlayer: (player: Omit<Player, 'totalScore' | 'roundScores' | 'position'>) => void;
   onRemovePlayer: (playerId: string) => void;
   themeColor: string;
+  maxPlayers?: number;
 }
 
 const COLORS = [
@@ -32,7 +34,10 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
   onAddPlayer,
   onRemovePlayer,
   themeColor,
+  maxPlayers,
 }) => {
+  const t = useTranslation();
+  const atMax = maxPlayers !== undefined && selectedPlayers.length >= maxPlayers;
   const { renameSavedPlayer, removeSavedPlayer } = useGame();
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -117,7 +122,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
           <input
             autoFocus
             type="text"
-            placeholder="Nome do Jogador"
+            placeholder={t.playerSelector.namePlaceholder}
             value={editMode.name}
             onChange={(e) => setEditMode(m => m ? { ...m, name: e.target.value } : m)}
             onKeyDown={(e) => { if (e.key === 'Enter') confirmEdit(); if (e.key === 'Escape') setEditMode(null); }}
@@ -133,7 +138,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
           {/* Avatar */}
           <div>
             <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Avatar</p>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '6px 2px 10px 2px' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '6px 2px 10px 2px', overflow: 'visible' }}>
               {AVATARS.map(avatar => (
                 <button
                   key={avatar}
@@ -158,7 +163,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
           {/* Cor */}
           <div>
             <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Cor</p>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '6px 2px 10px 2px' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '6px 2px 10px 2px', overflow: 'visible' }}>
               {COLORS.map(color => (
                 <button
                   key={color}
@@ -250,7 +255,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
             style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
           >
             {/* Jogadores salvos */}
-            {availableSaved.length > 0 && (
+            {availableSaved.length > 0 && !atMax && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {availableSaved.map(player => (
                   <motion.div
@@ -322,18 +327,20 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
             )}
 
             {/* Botão novo jogador */}
-            <button
-              onClick={() => setIsAdding(true)}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                gap: '12px', padding: '20px', borderRadius: '16px',
-                border: '2px dashed #475569', color: '#94a3b8',
-                fontWeight: 700, fontSize: '17px', background: 'transparent', cursor: 'pointer',
-              }}
-            >
-              <UserPlus style={{ width: '22px', height: '22px' }} />
-              Adicionar Novo Jogador
-            </button>
+            {!atMax && (
+              <button
+                onClick={() => setIsAdding(true)}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  gap: '12px', padding: '20px', borderRadius: '16px',
+                  border: '2px dashed #475569', color: '#94a3b8',
+                  fontWeight: 700, fontSize: '17px', background: 'transparent', cursor: 'pointer',
+                }}
+              >
+                <UserPlus style={{ width: '22px', height: '22px' }} />
+                {t.playerSelector.addNew}
+              </button>
+            )}
           </motion.div>
         ) : (
           <motion.div
@@ -373,7 +380,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
               <input
                 autoFocus
                 type="text"
-                placeholder="Nome do Jogador"
+                placeholder={t.playerSelector.namePlaceholder}
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -389,7 +396,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
               {/* Avatar */}
               <div>
                 <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Avatar</p>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '6px 2px 10px 2px' }}>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '6px 2px 10px 2px', overflow: 'visible' }}>
                   {AVATARS.map(avatar => (
                     <button
                       key={avatar}
@@ -414,7 +421,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
               {/* Cor */}
               <div>
                 <p style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Cor</p>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '6px 2px 10px 2px' }}>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '6px 2px 10px 2px', overflow: 'visible' }}>
                   {COLORS.map(color => (
                     <button
                       key={color}

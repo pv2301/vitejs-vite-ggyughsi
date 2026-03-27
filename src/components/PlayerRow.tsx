@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Crown, TrendingDown, Plus } from 'lucide-react';
 import type { Player } from '../types';
+import { useTranslation } from '../i18n/useTranslation';
 
 interface PlayerRowProps {
   player: Player;
@@ -26,6 +27,7 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
   themeColor,
   allowNegative = false,
 }) => {
+  const t = useTranslation();
   const [inputValue, setInputValue] = React.useState('');
   const [isNegative, setIsNegative] = React.useState(false);
 
@@ -104,10 +106,10 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
             <span style={{ fontSize: '28px', fontWeight: 900, color: themeColor, lineHeight: 1 }}>
               {player.totalScore}
             </span>
-            <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 500 }}>pts</span>
+            <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 500 }}>{t.common.pts}</span>
             <span style={{ fontSize: '14px', color: '#334155' }}>•</span>
             <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 500 }}>
-              {player.roundScores.length} {player.roundScores.length === 1 ? 'rodada' : 'rodadas'}
+              {t.activeGame.roundsLabel(player.roundScores.length)}
             </span>
           </div>
         </div>
@@ -183,7 +185,7 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value.replace(/[^0-9.]/g, ''))}
               onKeyDown={handleKeyDown}
-              placeholder="Pontos da rodada"
+              placeholder={t.activeGame.roundPlaceholder}
               style={{
                 flex: 1,
                 minWidth: 0,

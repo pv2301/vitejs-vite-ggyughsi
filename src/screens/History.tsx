@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Trash2, Eye, Calendar, Users, AlertTriangle } from 'lucide-react';
 import { useGame } from '../context/GameContext';
+import { useTranslation } from '../i18n/useTranslation';
 import type { GameSession, GameConfig } from '../types';
 
 interface HistoryProps {
@@ -12,9 +13,12 @@ interface HistoryProps {
 // Modal de confirmação customizado
 const ConfirmModal: React.FC<{
   message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  title?: string;
   onConfirm: () => void;
   onCancel: () => void;
-}> = ({ message, onConfirm, onCancel }) => (
+}> = ({ message, confirmLabel = 'Remove', cancelLabel = 'Cancel', title = 'Confirm removal', onConfirm, onCancel }) => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -62,7 +66,7 @@ const ConfirmModal: React.FC<{
       </div>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: '17px', fontWeight: 800, color: 'white', marginBottom: '8px' }}>
-          Confirmar remoção
+          {title}
         </div>
         <div style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.5 }}>
           {message}
@@ -77,7 +81,7 @@ const ConfirmModal: React.FC<{
             fontSize: '15px', fontWeight: 700, cursor: 'pointer',
           }}
         >
-          Cancelar
+          {cancelLabel}
         </button>
         <button
           onClick={onConfirm}
@@ -87,7 +91,7 @@ const ConfirmModal: React.FC<{
             fontSize: '15px', fontWeight: 800, cursor: 'pointer',
           }}
         >
-          Sim, remover
+          {confirmLabel}
         </button>
       </div>
     </motion.div>
@@ -96,12 +100,13 @@ const ConfirmModal: React.FC<{
 
 export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
   const { gameHistory, deleteHistorySession, availableGames } = useGame();
+  const t = useTranslation();
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
+    return date.toLocaleDateString(undefined, {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit',
     });
@@ -111,7 +116,7 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
     availableGames.find(g => g.id === gameId);
 
   const FALLBACK_CONFIG: GameConfig = {
-    id: 'unknown', name: 'Jogo removido', themeColor: '#64748b',
+    id: 'unknown', name: '?', themeColor: '#64748b',
     victoryCondition: 'highest_score', allowNegative: false,
     description: '', icon: 'dices',
   };
@@ -144,10 +149,10 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
         </button>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: '28px', fontWeight: 900, color: 'white', letterSpacing: '-0.02em', lineHeight: 1 }}>
-            Histórico
+            {t.history.title}
           </div>
           <div style={{ fontSize: '14px', color: '#64748b', marginTop: '4px', fontWeight: 500 }}>
-            {gameHistory.length} {gameHistory.length === 1 ? 'partida salva' : 'partidas salvas'}
+            {t.history.matchesLabel(gameHistory.length)}
           </div>
         </div>
         {gameHistory.length > 0 && (
@@ -159,7 +164,7 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
               fontSize: '13px', fontWeight: 700, cursor: 'pointer', flexShrink: 0,
             }}
           >
-            Limpar tudo
+            {t.history.deleteAll}
           </button>
         )}
       </div>
@@ -180,10 +185,10 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '20px', fontWeight: 900, color: '#475569', marginBottom: '6px' }}>
-                Nenhuma partida ainda
+                {t.history.empty}
               </div>
               <div style={{ fontSize: '15px', color: '#334155' }}>
-                Suas partidas finalizadas aparecerão aqui
+                {t.history.emptyHint}
               </div>
             </div>
           </div>
@@ -255,11 +260,10 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
                         </div>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: '16px', fontWeight: 900, color: 'white' }}>
-                            {winner.name} venceu
+                            {winner.name}
                           </div>
                           <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '2px' }}>
-                            {winner.totalScore} pontos · {session.currentRound}{' '}
-                            {session.currentRound === 1 ? 'rodada' : 'rodadas'}
+                            {winner.totalScore} {t.common.pts} · {t.activeGame.roundsLabel(session.currentRound)}
                           </div>
                         </div>
                         <div style={{ fontSize: '22px', fontWeight: 900, color: gameConfig.themeColor }}>
@@ -273,7 +277,7 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
                         <Users style={{ width: '15px', height: '15px', color: '#64748b' }} />
                         <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 600 }}>
-                          {session.players.length} jogadores
+                          {t.history.players(session.players.length)}
                         </span>
                       </div>
 
@@ -287,7 +291,7 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
                         }}
                       >
                         <Eye style={{ width: '16px', height: '16px' }} />
-                        Detalhes
+                        {t.podium.title}
                       </button>
 
                       <button
@@ -313,14 +317,20 @@ export const History: React.FC<HistoryProps> = ({ onBack, onViewSession }) => {
       <AnimatePresence>
         {confirmDeleteId && (
           <ConfirmModal
-            message="Deseja remover esta partida do histórico?"
+            title={t.history.confirmRemoval}
+            message={t.history.deleteSessionMessage}
+            confirmLabel={t.common.remove}
+            cancelLabel={t.common.cancel}
             onConfirm={() => { deleteHistorySession(confirmDeleteId); setConfirmDeleteId(null); }}
             onCancel={() => setConfirmDeleteId(null)}
           />
         )}
         {confirmClearAll && (
           <ConfirmModal
-            message="Deseja remover todas as partidas do histórico? Esta ação não pode ser desfeita."
+            title={t.history.confirmRemoval}
+            message={t.history.deleteAllMessage}
+            confirmLabel={t.common.remove}
+            cancelLabel={t.common.cancel}
             onConfirm={() => {
               [...gameHistory].forEach(s => deleteHistorySession(s.id));
               setConfirmClearAll(false);
