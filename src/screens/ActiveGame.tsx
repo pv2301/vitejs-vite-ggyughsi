@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, X, AlertCircle, Crown, TrendingDown, Plus, Timer } from 'lucide-react';
+import { Trophy, X, AlertCircle, Crown, TrendingDown, Plus, Timer, Pause, Play, RotateCcw } from 'lucide-react';
 import { PlayerRow } from '../components/PlayerRow';
 import { DueloScreen } from './DueloScreen';
 import { useGame } from '../context/GameContext';
@@ -206,12 +206,22 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
   const t = useTranslation();
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [timerRunning, setTimerRunning] = useState(true);
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     setElapsedSeconds(0);
-    const id = setInterval(() => setElapsedSeconds((s: number) => s + 1), 1000);
-    return () => clearInterval(id);
+    setTimerRunning(true);
   }, [currentSession?.id]);
+
+  useEffect(() => {
+    if (timerRunning) {
+      timerIntervalRef.current = setInterval(() => setElapsedSeconds((s: number) => s + 1), 1000);
+    } else {
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    }
+    return () => { if (timerIntervalRef.current) clearInterval(timerIntervalRef.current); };
+  }, [timerRunning]);
 
   if (!currentSession) return null;
 
@@ -286,9 +296,33 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
                 {!isTeamMode && !isWinnerMode && t.activeGame.playersLabel(participantCount)}
               </span>
               {gameConfig.timerEnabled && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: gameConfig.themeColor, fontWeight: 700 }}>
-                  <Timer style={{ width: '13px', height: '13px' }} />
-                  {String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:{String(elapsedSeconds % 60).padStart(2, '0')}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                  <button
+                    onClick={() => setTimerRunning((r: boolean) => !r)}
+                    style={{
+                      width: '22px', height: '22px', borderRadius: '50%', border: 'none', cursor: 'pointer',
+                      background: `${gameConfig.themeColor}30`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    }}
+                  >
+                    {timerRunning
+                      ? <Pause style={{ width: '10px', height: '10px', color: gameConfig.themeColor }} />
+                      : <Play style={{ width: '10px', height: '10px', color: gameConfig.themeColor }} />}
+                  </button>
+                  <Timer style={{ width: '13px', height: '13px', color: timerRunning ? gameConfig.themeColor : '#64748b' }} />
+                  <span style={{ color: timerRunning ? gameConfig.themeColor : '#64748b', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                    {String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:{String(elapsedSeconds % 60).padStart(2, '0')}
+                  </span>
+                  <button
+                    onClick={() => setElapsedSeconds(0)}
+                    style={{
+                      width: '22px', height: '22px', borderRadius: '50%', border: 'none', cursor: 'pointer',
+                      background: 'rgba(255,255,255,0.07)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    }}
+                  >
+                    <RotateCcw style={{ width: '10px', height: '10px', color: '#64748b' }} />
+                  </button>
                 </span>
               )}
             </div>
