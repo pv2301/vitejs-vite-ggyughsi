@@ -413,13 +413,16 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
     ? (currentSession.teams ?? [])
     : currentSession.players;
 
-  const p1 = participants[0];
-  const p2 = participants[1];
+  // Fixa a ordem visual dos painéis pelo ID original (não muda quando o score reordena o array)
+  const pinnedP1Id = useRef(participants[0]?.id ?? '');
+  const pinnedP2Id = useRef(participants[1]?.id ?? '');
+  const p1 = participants.find(p => p.id === pinnedP1Id.current) ?? participants[0];
+  const p2 = participants.find(p => p.id === pinnedP2Id.current) ?? participants[1];
 
   const pointsPerTap = gameConfig?.duelPointsPerTap ?? 1;
   const timerEnabled = gameConfig?.duelTimerEnabled ?? false;
 
-  const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
+  const [isLandscape, setIsLandscape] = useState(() => window.matchMedia('(orientation: landscape)').matches);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(timerEnabled);
   const [flash, setFlash] = useState<Record<string, boolean>>({});
@@ -431,18 +434,12 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchStartY = useRef<Record<string, number>>({});
 
-  // Orientation
+  // Orientation — matchMedia é o método mais confiável em mobile
   useEffect(() => {
-    const handler = () => {
-      // small delay so the browser finishes rotating before reading dimensions
-      setTimeout(() => setIsLandscape(window.innerWidth > window.innerHeight), 50);
-    };
-    window.addEventListener('resize', handler);
-    window.addEventListener('orientationchange', handler);
-    return () => {
-      window.removeEventListener('resize', handler);
-      window.removeEventListener('orientationchange', handler);
-    };
+    const mq = window.matchMedia('(orientation: landscape)');
+    const handler = (e: MediaQueryListEvent) => setIsLandscape(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, []);
 
   // Timer
