@@ -49,6 +49,9 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
   const [editScoringMode, setEditScoringMode] = useState<ScoringMode>(gameConfig?.scoringMode ?? 'numeric');
   const [rulesDirty, setRulesDirty] = useState(false);
 
+  // Timer (todos os jogos)
+  const [timerEnabled, setTimerEnabled] = useState(gameConfig?.timerEnabled ?? false);
+
   // Duelo-specific settings
   const [duelPointsPerTap, setDuelPointsPerTap] = useState(gameConfig?.duelPointsPerTap ?? 1);
   const [duelTimerEnabled, setDuelTimerEnabled] = useState(gameConfig?.duelTimerEnabled ?? false);
@@ -124,10 +127,22 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
     setTeams(prev => prev.filter(t => t.id !== teamId));
   };
 
+  const handleQuickStart = () => {
+    updateGameOverride('duelo', { duelPointsPerTap, duelTimerEnabled });
+    const players: Player[] = [
+      { id: 'quick_p1', name: t.gameSetup.player1, color: '#ef4444', avatar: '🔴', totalScore: 0, roundScores: [] },
+      { id: 'quick_p2', name: t.gameSetup.player2, color: '#3b82f6', avatar: '🔵', totalScore: 0, roundScores: [] },
+    ];
+    startNewSession('duelo', players);
+    onStartGame();
+  };
+
   const handleStartGame = () => {
     if (!canStart) return;
     if (isDuelo) {
       updateGameOverride('duelo', { duelPointsPerTap, duelTimerEnabled });
+    } else {
+      updateGameOverride(gameId, { timerEnabled });
     }
     saveRules();
 
@@ -235,6 +250,24 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
       {/* ── ZONA 2: Corpo scrollável ── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px 160px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
+        {/* ── Início Rápido (Duelo) ── */}
+        {isDuelo && (
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={handleQuickStart}
+            style={{
+              width: '100%', padding: '18px', borderRadius: '16px', border: 'none', cursor: 'pointer',
+              background: `linear-gradient(135deg, ${gameConfig.themeColor} 0%, ${gameConfig.themeColor}bb 100%)`,
+              color: 'white', fontSize: '18px', fontWeight: 900,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+              boxShadow: `0 4px 24px ${gameConfig.themeColor}55`,
+            }}
+          >
+            <Zap style={{ width: '22px', height: '22px' }} />
+            {t.gameSetup.quickStart}
+          </motion.button>
+        )}
+
         {/* ── Configurações do Duelo ── */}
         {isDuelo && (
           <div style={{ borderRadius: '16px', border: `2px solid ${gameConfig.themeColor}55`, background: `${gameConfig.themeColor}18`, padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -290,6 +323,38 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
                 }} />
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Cronômetro (todos os jogos exceto Duelo) */}
+        {!isDuelo && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            borderRadius: '16px', border: '1.5px solid rgba(255,255,255,0.08)',
+            background: 'rgba(30,41,59,0.6)', padding: '16px 20px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Timer style={{ width: '18px', height: '18px', color: timerEnabled ? gameConfig.themeColor : '#64748b' }} />
+              <div>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: 'white' }}>{t.gameSetup.timer}</div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{t.gameSetup.timerSub}</div>
+              </div>
+            </div>
+            <button
+              onClick={() => setTimerEnabled((v: boolean) => !v)}
+              style={{
+                width: '52px', height: '28px', borderRadius: '999px', border: 'none', cursor: 'pointer',
+                background: timerEnabled ? gameConfig.themeColor : '#334155',
+                position: 'relative', flexShrink: 0, transition: 'background 0.2s',
+              }}
+            >
+              <div style={{
+                position: 'absolute', top: '4px',
+                left: timerEnabled ? '28px' : '4px',
+                width: '20px', height: '20px', borderRadius: '50%',
+                background: 'white', transition: 'left 0.2s',
+              }} />
+            </button>
           </div>
         )}
 

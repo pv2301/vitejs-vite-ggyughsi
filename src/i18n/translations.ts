@@ -92,6 +92,9 @@ const translations = {
       scoring: 'Scoring',
       modeNumericRound: 'Numeric per round',
       teamModeSubtitle: 'Players grouped in teams',
+      quickStart: 'Quick Start',
+      player1: 'Player 1',
+      player2: 'Player 2',
     },
     activeGame: {
       roundLabel: 'Round',
@@ -116,6 +119,7 @@ const translations = {
     },
     duelo: {
       tapHint: 'tap to score',
+      editName: 'Edit name',
       tutorial: {
         title: 'Duel Mode',
         tap: 'Tap to add points',
@@ -268,6 +272,9 @@ const translations = {
       scoring: 'Pontuação',
       modeNumericRound: 'Numérica por rodada',
       teamModeSubtitle: 'Jogadores agrupados em equipes',
+      quickStart: 'Início Rápido',
+      player1: 'Jogador 1',
+      player2: 'Jogador 2',
     },
     activeGame: {
       roundLabel: 'Rodada',
@@ -292,6 +299,7 @@ const translations = {
     },
     duelo: {
       tapHint: 'toque para pontuar',
+      editName: 'Editar nome',
       tutorial: {
         title: 'Modo Duelo',
         tap: 'Toque para adicionar pontos',

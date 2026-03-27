@@ -92,14 +92,22 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     ...state.customGames,
   ];
 
-  const availableGames: GameConfig[] = state.gameOrder.length > 0
-    ? [
-        ...state.gameOrder
-          .map(id => baseGames.find(g => g.id === id))
-          .filter((g): g is GameConfig => g !== undefined),
-        ...baseGames.filter(g => !state.gameOrder.includes(g.id)),
-      ]
-    : baseGames;
+  // Normaliza a ordem: mantém jogos salvos na sequência do usuário e
+  // garante que jogos novos (adicionados ao GAME_CONFIGS depois) apareçam sempre.
+  const allBaseIds = baseGames.map(g => g.id);
+  const validStoredOrder = state.gameOrder.filter(id => allBaseIds.includes(id));
+  const missingIds = allBaseIds.filter(id => !validStoredOrder.includes(id));
+  const normalizedOrder = [...validStoredOrder, ...missingIds];
+
+  const availableGames: GameConfig[] =
+    normalizedOrder.length > 0
+      ? normalizedOrder.map((id: string) => baseGames.find(g => g.id === id)!).filter(Boolean)
+      : baseGames;
+
+  // DEBUG TEMPORÁRIO — remover depois
+  console.log('[DEBUG] gameOrder:', state.gameOrder);
+  console.log('[DEBUG] allBaseIds:', allBaseIds);
+  console.log('[DEBUG] availableGames:', availableGames.map(g => g.id));
 
   const getEffectiveConfig = (gameId: string): GameConfig | undefined =>
     availableGames.find(g => g.id === gameId);

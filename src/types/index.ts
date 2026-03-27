@@ -16,6 +16,7 @@ export interface GameConfig {
   imageBase64?: string;
   isCustom?: boolean;
   isBuiltin?: boolean;
+  timerEnabled?: boolean;
   duelPointsPerTap?: number;
   duelTimerEnabled?: boolean;
 }

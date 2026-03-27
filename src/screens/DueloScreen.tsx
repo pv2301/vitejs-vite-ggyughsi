@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, RotateCcw, Timer, Play, Pause, Trophy } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Timer, Play, Pause, Trophy, Pencil } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 import { useTranslation } from '../i18n/useTranslation';
 import type { Player, Team } from '../types';
@@ -31,13 +31,15 @@ const Panel: React.FC<{
   isTeam: boolean;
   flash: boolean;
   isLandscape: boolean;
+  displayName?: string;
   onTouchStart: (e: React.TouchEvent) => void;
   onTouchEnd: (e: React.TouchEvent) => void;
   onClick: () => void;
-}> = ({ participant, isTeam, flash, isLandscape, onTouchStart, onTouchEnd, onClick }) => {
+  onEditName: () => void;
+}> = ({ participant, isTeam, flash, isLandscape, displayName, onTouchStart, onTouchEnd, onClick, onEditName }) => {
   const tPanel = useTranslation();
   const color = participant.color;
-  const name = participant.name;
+  const name = displayName ?? participant.name;
   const score = participant.totalScore;
   const avatarEmoji = !isTeam ? (participant as Player).avatar : undefined;
 
@@ -89,17 +91,30 @@ const Panel: React.FC<{
         }}>
           {avatarEmoji ?? getInitials(name)}
         </div>
-        {/* Nome */}
-        <div style={{
-          fontSize: isLandscape ? '16px' : '18px',
-          fontWeight: 900,
-          color: 'white',
-          textShadow: '0 2px 8px rgba(0,0,0,0.35)',
-          letterSpacing: '-0.01em',
-          maxWidth: isLandscape ? '140px' : '200px',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>
-          {name}
+        {/* Nome + lápis */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{
+            fontSize: isLandscape ? '16px' : '18px',
+            fontWeight: 900,
+            color: 'white',
+            textShadow: '0 2px 8px rgba(0,0,0,0.35)',
+            letterSpacing: '-0.01em',
+            maxWidth: isLandscape ? '110px' : '160px',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {name}
+          </div>
+          <button
+            onClick={(e: React.MouseEvent) => { e.stopPropagation(); onEditName(); }}
+            onTouchEnd={(e: React.TouchEvent) => e.stopPropagation()}
+            style={{
+              background: 'rgba(0,0,0,0.25)', border: 'none', borderRadius: '50%',
+              width: '26px', height: '26px', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
+            }}
+          >
+            <Pencil size={13} color="rgba(255,255,255,0.75)" />
+          </button>
         </div>
         {/* Membros do time */}
         {isTeam && (participant as Team).playerNames?.length > 0 && (
@@ -410,15 +425,24 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
   const [flash, setFlash] = useState<Record<string, boolean>>({});
   const [showTutorial, setShowTutorial] = useState(!localStorage.getItem(TUTORIAL_KEY));
   const [winnerId, setWinnerId] = useState<string | null>(null);
+  const [nameOverrides, setNameOverrides] = useState<Record<string, string>>({});
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchStartY = useRef<Record<string, number>>({});
 
   // Orientation
   useEffect(() => {
-    const handler = () => setIsLandscape(window.innerWidth > window.innerHeight);
+    const handler = () => {
+      // small delay so the browser finishes rotating before reading dimensions
+      setTimeout(() => setIsLandscape(window.innerWidth > window.innerHeight), 50);
+    };
     window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
+    window.addEventListener('orientationchange', handler);
+    return () => {
+      window.removeEventListener('resize', handler);
+      window.removeEventListener('orientationchange', handler);
+    };
   }, []);
 
   // Timer
@@ -497,9 +521,11 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
         isTeam={isTeamMode}
         flash={!!flash[p1.id]}
         isLandscape={isLandscape}
+        displayName={nameOverrides[p1.id]}
         onTouchStart={e => handleTouchStart(p1.id, e)}
         onTouchEnd={e => handleTouchEnd(p1.id, e)}
         onClick={() => addScore(p1.id)}
+        onEditName={() => setEditingNameId(p1.id)}
       />
 
       {/* Divider central */}
@@ -520,9 +546,11 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
         isTeam={isTeamMode}
         flash={!!flash[p2.id]}
         isLandscape={isLandscape}
+        displayName={nameOverrides[p2.id]}
         onTouchStart={e => handleTouchStart(p2.id, e)}
         onTouchEnd={e => handleTouchEnd(p2.id, e)}
         onClick={() => addScore(p2.id)}
+        onEditName={() => setEditingNameId(p2.id)}
       />
 
       {/* Overlays */}
@@ -536,6 +564,65 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
             onContinue={() => setWinnerId(null)}
           />
         )}
+        {editingNameId && !showTutorial && (() => {
+          const editParticipant = participants.find(p => p.id === editingNameId);
+          const currentName = nameOverrides[editingNameId] ?? editParticipant?.name ?? '';
+          return (
+            <motion.div
+              key="edit-name"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.75)',
+                backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: '18px', zIndex: 60, padding: '32px',
+              }}
+              onClick={() => setEditingNameId(null)}
+            >
+              <div
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%', maxWidth: '300px' }}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              >
+                <div style={{
+                  width: '48px', height: '48px', borderRadius: '50%',
+                  background: editParticipant?.color ?? '#64748b',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '22px', fontWeight: 900, color: 'white',
+                  border: '3px solid rgba(255,255,255,0.3)',
+                }}>
+                  {(editParticipant as Player)?.avatar ?? getInitials(editParticipant?.name ?? '')}
+                </div>
+                <input
+                  autoFocus
+                  value={currentName}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setNameOverrides((prev: Record<string, string>) => ({ ...prev, [editingNameId]: e.target.value }))
+                  }
+                  onKeyDown={(e: React.KeyboardEvent) => e.key === 'Enter' && setEditingNameId(null)}
+                  maxLength={20}
+                  style={{
+                    width: '100%', padding: '14px 18px', borderRadius: '14px',
+                    border: `2px solid ${editParticipant?.color ?? 'rgba(255,255,255,0.3)'}`,
+                    background: 'rgba(255,255,255,0.1)', color: 'white',
+                    fontSize: '20px', fontWeight: 800, outline: 'none', textAlign: 'center',
+                    caretColor: 'white',
+                  }}
+                />
+                <button
+                  onClick={() => setEditingNameId(null)}
+                  style={{
+                    width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
+                    background: editParticipant?.color ?? '#f59e0b', color: 'white',
+                    fontSize: '16px', fontWeight: 900, cursor: 'pointer',
+                  }}
+                >
+                  OK
+                </button>
+              </div>
+            </motion.div>
+          );
+        })()}
       </AnimatePresence>
     </div>
   );

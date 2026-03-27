@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, X, AlertCircle, Crown, TrendingDown, Plus } from 'lucide-react';
+import { Trophy, X, AlertCircle, Crown, TrendingDown, Plus, Timer } from 'lucide-react';
 import { PlayerRow } from '../components/PlayerRow';
 import { DueloScreen } from './DueloScreen';
 import { useGame } from '../context/GameContext';
@@ -205,6 +205,13 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
   const { currentSession, availableGames, updatePlayerScore, updateTeamScore, recordRoundWinner, nextRound, finishSession } = useGame();
   const t = useTranslation();
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    setElapsedSeconds(0);
+    const id = setInterval(() => setElapsedSeconds((s: number) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [currentSession?.id]);
 
   if (!currentSession) return null;
 
@@ -271,11 +278,19 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
             <div style={{ fontSize: '28px', fontWeight: 900, color: 'white', lineHeight: 1, letterSpacing: '-0.01em' }}>
               {gameConfig.name}
             </div>
-            <div style={{ fontSize: '15px', color: '#64748b', marginTop: '4px', fontWeight: 500 }}>
-              {t.activeGame.roundLabel} {currentSession.currentRound}
-              {isTeamMode && t.activeGame.teamsLabel}
-              {isWinnerMode && t.activeGame.winnerLabel}
-              {!isTeamMode && !isWinnerMode && t.activeGame.playersLabel(participantCount)}
+            <div style={{ fontSize: '15px', color: '#64748b', marginTop: '4px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span>
+                {t.activeGame.roundLabel} {currentSession.currentRound}
+                {isTeamMode && t.activeGame.teamsLabel}
+                {isWinnerMode && t.activeGame.winnerLabel}
+                {!isTeamMode && !isWinnerMode && t.activeGame.playersLabel(participantCount)}
+              </span>
+              {gameConfig.timerEnabled && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: gameConfig.themeColor, fontWeight: 700 }}>
+                  <Timer style={{ width: '13px', height: '13px' }} />
+                  {String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:{String(elapsedSeconds % 60).padStart(2, '0')}
+                </span>
+              )}
             </div>
           </div>
 
