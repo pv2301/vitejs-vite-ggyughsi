@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, X, AlertCircle, Crown, TrendingDown, Plus } from 'lucide-react';
 import { PlayerRow } from '../components/PlayerRow';
+import { DueloScreen } from './DueloScreen';
 import { useGame } from '../context/GameContext';
+import { useTranslation } from '../i18n/useTranslation';
 import type { Team } from '../types';
 
 interface ActiveGameProps {
@@ -19,11 +21,14 @@ interface TeamRowProps {
   showInput: boolean;
   themeColor: string;
   allowNegative?: boolean;
+  roundPlaceholder?: string;
   onScoreSubmit?: (score: number) => void;
   onWinnerSelect?: () => void;
 }
 
-const TeamRow: React.FC<TeamRowProps> = ({ team, isLeader, isLast, mode, showInput, themeColor, allowNegative = false, onScoreSubmit, onWinnerSelect }) => {
+const TeamRow: React.FC<TeamRowProps> = ({ team, isLeader, isLast, mode, showInput, themeColor, allowNegative = false, roundPlaceholder, onScoreSubmit, onWinnerSelect }) => {
+  const tRow = useTranslation();
+  const placeholder = roundPlaceholder ?? tRow.activeGame.roundPlaceholder;
   const [inputValue, setInputValue] = React.useState('');
   const [isNegative, setIsNegative] = React.useState(false);
 
@@ -89,7 +94,7 @@ const TeamRow: React.FC<TeamRowProps> = ({ team, isLeader, isLast, mode, showInp
             <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 500 }}>pts</span>
             <span style={{ fontSize: '14px', color: '#334155' }}>•</span>
             <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 500 }}>
-              {team.roundScores.length} {team.roundScores.length === 1 ? 'rodada' : 'rodadas'}
+              {tRow.activeGame.roundsLabel(team.roundScores.length)}
             </span>
           </div>
         </div>
@@ -149,7 +154,7 @@ const TeamRow: React.FC<TeamRowProps> = ({ team, isLeader, isLast, mode, showInp
               value={inputValue}
               onChange={e => setInputValue(e.target.value.replace(/[^0-9.]/g, ''))}
               onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
-              placeholder="Pontos da rodada"
+              placeholder={placeholder}
               style={{
                 flex: 1, minWidth: 0, padding: '14px',
                 background: 'transparent',
@@ -198,6 +203,7 @@ const TeamRow: React.FC<TeamRowProps> = ({ team, isLeader, isLast, mode, showInp
 // ── ActiveGame ────────────────────────────────────────────────────────────────
 export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
   const { currentSession, availableGames, updatePlayerScore, updateTeamScore, recordRoundWinner, nextRound, finishSession } = useGame();
+  const t = useTranslation();
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
 
   if (!currentSession) return null;
@@ -206,7 +212,13 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
   if (!gameConfig) return null;
 
   const isTeamMode = !!(currentSession.teams?.length);
+  const isDueloMode = gameConfig.scoringMode === 'duelo';
   const isWinnerMode = gameConfig.scoringMode === 'winner_takes_all';
+
+  // Modo Duelo: renderiza tela split-screen dedicada
+  if (isDueloMode) {
+    return <DueloScreen onFinish={onFinish} onQuit={onQuit} />;
+  }
 
   // Verifica se todos pontuaram nesta rodada
   const allScored = isTeamMode
@@ -260,10 +272,10 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
               {gameConfig.name}
             </div>
             <div style={{ fontSize: '15px', color: '#64748b', marginTop: '4px', fontWeight: 500 }}>
-              Rodada {currentSession.currentRound}
-              {isTeamMode && ' · Times'}
-              {isWinnerMode && ' · Vencedor da rodada'}
-              {!isTeamMode && !isWinnerMode && ` · ${participantCount} jogadores`}
+              {t.activeGame.roundLabel} {currentSession.currentRound}
+              {isTeamMode && t.activeGame.teamsLabel}
+              {isWinnerMode && t.activeGame.winnerLabel}
+              {!isTeamMode && !isWinnerMode && t.activeGame.playersLabel(participantCount)}
             </div>
           </div>
 
@@ -285,7 +297,7 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
             background: `${gameConfig.themeColor}18`, border: `1.5px solid ${gameConfig.themeColor}55`,
             borderRadius: '14px', fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: 600,
           }}>
-            Selecione o <strong style={{ color: '#22c55e', fontSize: '16px', fontWeight: 900 }}>+</strong> para pontuar
+            {t.activeGame.bannerWinner} <strong style={{ color: '#22c55e', fontSize: '16px', fontWeight: 900 }}>+</strong> {t.activeGame.bannerWinnerSuffix}
           </div>
         )}
 
@@ -296,7 +308,7 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
             background: 'rgba(96,165,250,0.12)', border: '1.5px solid rgba(96,165,250,0.4)',
             borderRadius: '14px', fontSize: '14px', color: '#60a5fa', fontWeight: 700, textAlign: 'center',
           }}>
-            Informe os pontos da rodada
+            {t.activeGame.bannerEnterScores}
           </div>
         )}
 
@@ -313,9 +325,9 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
           >
             <AlertCircle style={{ width: '24px', height: '24px', color: '#facc15', flexShrink: 0 }} />
             <div>
-              <div style={{ color: '#facc15', fontWeight: 700, fontSize: '16px' }}>Condição de vitória atingida!</div>
+              <div style={{ color: '#facc15', fontWeight: 700, fontSize: '16px' }}>{t.activeGame.winConditionReached}</div>
               <div style={{ color: 'rgba(253,224,71,0.75)', fontSize: '14px', marginTop: '2px' }}>
-                Atingiu {gameConfig.winningScore} pontos
+                {t.activeGame.winConditionSub(gameConfig.winningScore!)}
               </div>
             </div>
           </motion.div>
@@ -332,7 +344,7 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
               borderRadius: '14px', fontSize: '14px', color: '#34d399', fontWeight: 700, textAlign: 'center',
             }}
           >
-            Todos pontuaram! Avançando para próxima rodada...
+            {t.activeGame.bannerAllScored}
           </motion.div>
         )}
 
@@ -393,7 +405,7 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
           }}
         >
           <Trophy style={{ width: '22px', height: '22px' }} />
-          FINALIZAR
+          {t.activeGame.finish}
         </motion.button>
       </div>
 
@@ -417,22 +429,22 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
                 maxWidth: '380px', width: '100%', border: '1.5px solid rgba(71,85,105,0.5)',
               }}
             >
-              <div style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginBottom: '8px' }}>Abandonar Partida?</div>
+              <div style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginBottom: '8px' }}>{t.activeGame.quit.title}</div>
               <div style={{ fontSize: '15px', color: '#64748b', marginBottom: '24px', lineHeight: 1.5 }}>
-                Todo o progresso da partida atual será perdido.
+                {t.activeGame.quit.message}
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button
                   onClick={() => setShowQuitConfirm(false)}
                   style={{ flex: 1, padding: '16px', background: 'rgba(71,85,105,0.5)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '16px', fontWeight: 700, cursor: 'pointer' }}
                 >
-                  Cancelar
+                  {t.activeGame.quit.cancel}
                 </button>
                 <button
                   onClick={onQuit}
                   style={{ flex: 1, padding: '16px', background: '#ef4444', border: 'none', borderRadius: '14px', color: 'white', fontSize: '16px', fontWeight: 700, cursor: 'pointer' }}
                 >
-                  Abandonar
+                  {t.activeGame.quit.confirm}
                 </button>
               </div>
             </motion.div>

@@ -4,13 +4,7 @@ import { History, Trophy, Sun, Moon, Menu, Users, X, Plus, Share2, ChevronUp, Ch
 import { GameCard } from '../components/GameCard';
 import { AppShareModal } from '../components/AppShareModal';
 import { useGame } from '../context/GameContext';
-
-const COLORS = [
-  '#ef4444', '#f97316', '#f59e0b', '#eab308',
-  '#84cc16', '#22c55e', '#10b981', '#14b8a6',
-  '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6',
-  '#a855f7', '#ec4899', '#64748b', '#0ea5e9',
-];
+import { useTranslation } from '../i18n/useTranslation';
 
 interface DashboardProps {
   onSelectGame: (gameId: string) => void;
@@ -27,14 +21,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenPlayers,
   onOpenNewGame,
 }) => {
-  const { gameHistory, darkMode, toggleDarkMode, availableGames, reorderGames, userTag, updateUserTag } = useGame();
+  const { gameHistory, darkMode, toggleDarkMode, availableGames, reorderGames, locale, setLocale } = useGame();
+  const t = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAppShare, setShowAppShare] = useState(false);
   const [reorderMode, setReorderMode] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [editingTag, setEditingTag] = useState(false);
-  const [tagInput, setTagInput] = useState(userTag?.label || '');
-  const [tagColor, setTagColor] = useState(userTag?.color || COLORS[0]);
 
   // Long press logic
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -85,15 +77,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     setDraggedIndex(null);
   };
 
-  const handleTagSave = () => {
-    if (tagInput.trim()) {
-      updateUserTag({ label: tagInput.trim(), color: tagColor });
-    } else {
-      updateUserTag(undefined);
-    }
-    setEditingTag(false);
-  };
-
   return (
     <div
       style={{
@@ -116,73 +99,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           >
             ScoreGames
           </motion.div>
-          {editingTag ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}
-            >
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input
-                  autoFocus
-                  type="text"
-                  placeholder="Personalize"
-                  value={tagInput}
-                  onChange={e => setTagInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleTagSave(); if (e.key === 'Escape') setEditingTag(false); }}
-                  style={{
-                    flex: 1, maxWidth: '200px', padding: '8px 12px', borderRadius: '8px',
-                    background: '#1e293b', border: `2px solid ${tagColor}`,
-                    fontSize: '13px', color: 'white', fontWeight: 600,
-                    outline: 'none', transition: 'border-color 0.2s',
-                  }}
-                />
-                <button
-                  onClick={handleTagSave}
-                  style={{
-                    padding: '6px 10px', borderRadius: '6px', background: tagColor,
-                    border: 'none', color: 'white', fontSize: '12px', fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  OK
-                </button>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', padding: '4px 0' }}>
-                {COLORS.map(color => (
-                  <button
-                    key={color}
-                    onClick={() => setTagColor(color)}
-                    style={{
-                      width: '28px', height: '28px', borderRadius: '50%',
-                      backgroundColor: color, border: 'none', cursor: 'pointer',
-                      outline: tagColor === color ? '2px solid white' : '2px solid transparent',
-                      outlineOffset: '2px',
-                      transform: tagColor === color ? 'scale(1.15)' : 'scale(1)',
-                      transition: 'all 0.2s',
-                    }}
-                  />
-                ))}
-              </div>
-            </motion.div>
-          ) : (
-            <motion.button
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1 }}
-              onClick={() => { setEditingTag(true); setTagInput(userTag?.label || ''); setTagColor(userTag?.color || COLORS[0]); }}
-              style={{
-                marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '6px 12px', borderRadius: '999px',
-                border: `2px solid ${userTag ? userTag.color : '#334155'}`,
-                background: userTag ? `${userTag.color}15` : 'transparent',
-                fontSize: '12px', fontWeight: 700, color: userTag ? userTag.color : '#64748b',
-                cursor: 'pointer', transition: 'all 0.2s',
-              }}
-            >
-              {userTag ? userTag.label : 'Escolha seu jogo'}
-            </motion.button>
-          )}
         </div>
 
         {/* Botões */}
@@ -202,10 +118,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 color: '#f59e0b', fontWeight: 800, fontSize: '14px',
               }}
             >
-              Concluir
+              {t.dashboard.done}
             </motion.button>
           ) : (
             <>
+              {/* Idioma */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setLocale(locale === 'en' ? 'pt-BR' : 'en')}
+                style={{
+                  width: '48px', height: '48px', borderRadius: '14px',
+                  border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer',
+                  background: 'rgba(255,255,255,0.07)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '22px', lineHeight: 1,
+                }}
+              >
+                {locale === 'en' ? '🇺🇸' : '🇧🇷'}
+              </motion.button>
+
               {/* Tema */}
               <motion.button
                 whileTap={{ scale: 0.9 }}
@@ -259,23 +190,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* ── Divisor ── */}
       <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '12px 0' }} />
-
-      {/* Dica de reordenação */}
-      <AnimatePresence>
-        {!reorderMode && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            style={{
-              textAlign: 'center', fontSize: '11px', color: '#334155',
-              paddingBottom: '4px', fontWeight: 500,
-            }}
-          >
-          
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* ── Lista de jogos ── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -376,7 +290,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* ── Footer ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', color: '#334155', fontSize: '12px' }}>
-        <span style={{ flex: 1, textAlign: 'center' }}>Designed by PV</span>
+        <span style={{ flex: 1, textAlign: 'center' }}>{t.dashboard.footer}</span>
+        <span style={{ flexShrink: 0 }}>v1.0.3</span>
       </div>
 
       {/* ── Bottom Sheet Menu ── */}
@@ -414,7 +329,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <div style={{ width: '36px', height: '4px', borderRadius: '99px', background: 'rgba(255,255,255,0.2)' }} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px 16px' }}>
-                <span style={{ fontSize: '18px', fontWeight: 900, color: 'white' }}>Menu</span>
+                <span style={{ fontSize: '18px', fontWeight: 900, color: 'white' }}>{t.dashboard.menu.title}</span>
                 <button
                   onClick={() => setMenuOpen(false)}
                   style={{
@@ -435,8 +350,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <Plus style={{ width: '24px', height: '24px', color: '#10b981' }} />
                   </div>
                   <div>
-                    <p style={{ fontSize: '17px', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>Novo Jogo</p>
-                    <p style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>Criar jogo com regras personalizadas</p>
+                    <p style={{ fontSize: '17px', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>{t.dashboard.menu.newGame}</p>
+                    <p style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>{t.dashboard.menu.newGameSub}</p>
                   </div>
                 </motion.button>
 
@@ -447,8 +362,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <Users style={{ width: '24px', height: '24px', color: '#60a5fa' }} />
                   </div>
                   <div>
-                    <p style={{ fontSize: '17px', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>Jogadores</p>
-                    <p style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>Gerenciar jogadores cadastrados</p>
+                    <p style={{ fontSize: '17px', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>{t.dashboard.menu.players}</p>
+                    <p style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>{t.dashboard.menu.playersSub}</p>
                   </div>
                 </motion.button>
 
@@ -459,8 +374,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <Trophy style={{ width: '24px', height: '24px', color: '#f59e0b' }} />
                   </div>
                   <div>
-                    <p style={{ fontSize: '17px', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>Torneios</p>
-                    <p style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>Criar e acompanhar torneios</p>
+                    <p style={{ fontSize: '17px', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>{t.dashboard.menu.tournaments}</p>
+                    <p style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>{t.dashboard.menu.tournamentsSub}</p>
                   </div>
                 </motion.button>
 
@@ -476,9 +391,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     )}
                   </div>
                   <div>
-                    <p style={{ fontSize: '17px', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>Histórico</p>
+                    <p style={{ fontSize: '17px', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>{t.dashboard.menu.history}</p>
                     <p style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>
-                      {gameHistory.length > 0 ? `${gameHistory.length} partida${gameHistory.length > 1 ? 's' : ''} registrada${gameHistory.length > 1 ? 's' : ''}` : 'Ver partidas anteriores'}
+                      {gameHistory.length > 0 ? t.dashboard.menu.historyCount(gameHistory.length) : t.dashboard.menu.historySub}
                     </p>
                   </div>
                 </motion.button>
@@ -490,8 +405,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <Share2 style={{ width: '24px', height: '24px', color: '#25D366' }} />
                   </div>
                   <div>
-                    <p style={{ fontSize: '17px', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>Compartilhar App</p>
-                    <p style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>QR Code e link para amigos</p>
+                    <p style={{ fontSize: '17px', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>{t.dashboard.menu.shareApp}</p>
+                    <p style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>{t.dashboard.menu.shareAppSub}</p>
                   </div>
                 </motion.button>
               </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import * as Icons from 'lucide-react';
 import type { GameConfig } from '../types';
+import { useTranslation } from '../i18n/useTranslation';
 
 interface GameCardProps {
   game: GameConfig;
@@ -15,25 +16,20 @@ const iconMap: Record<string, React.ElementType> = {
   circle: Icons.Circle,
   mountain: Icons.Mountain,
   dices: Icons.Dices,
-};
-
-// Texto de subtítulo descritivo para cada jogo
-const subtitleMap: Record<string, string> = {
-  skyjo: 'Descarte e fique com menos pontos',
-  take6: 'Evite pegar fileiras de bois',
-  uno: 'Descarte todas as suas cartas',
-  catan: 'Construa e expanda seu império',
-  generic: 'Pontuação personalizada',
+  zap: Icons.Zap,
 };
 
 export const GameCard: React.FC<GameCardProps> = ({ game, onClick, dimmed = false }) => {
+  const t = useTranslation();
   const MainIcon = iconMap[game.icon] || Icons.Dices;
-  const subtitle = subtitleMap[game.id] || 'Jogue com seus amigos';
+  const subtitle = t.gameCard.subtitles[game.id as keyof typeof t.gameCard.subtitles] ?? game.name;
 
-  const victoryText =
-    game.victoryCondition === 'lowest_score'
-      ? 'Menor pontuação vence'
-      : 'Maior pontuação vence';
+  const isDuelo = game.id === 'duelo';
+  const victoryText = isDuelo
+    ? t.gameCard.twoParticipants
+    : game.victoryCondition === 'lowest_score'
+      ? t.gameCard.lowestScore
+      : t.gameCard.highestScore;
 
   return (
     <motion.button
@@ -111,7 +107,7 @@ export const GameCard: React.FC<GameCardProps> = ({ game, onClick, dimmed = fals
               borderRadius: '999px', border: `1px solid ${game.themeColor}55`,
               whiteSpace: 'nowrap', flexShrink: 0,
             }}>
-              Meta {game.winningScore}pts
+              {t.gameCard.targetScore(game.winningScore)}
             </span>
           )}
           <span style={{

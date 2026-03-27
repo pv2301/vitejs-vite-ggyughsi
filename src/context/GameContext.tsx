@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { AppState, GameSession, Player, GameConfig, Team, Tournament, UserTag } from '../types';
+import type { AppState, GameSession, Player, GameConfig, Team, Tournament, UserTag, Locale } from '../types';
+import { detectLocale } from '../i18n/translations';
 import { GAME_CONFIGS } from '../config/games';
 
 interface GameContextType extends AppState {
@@ -27,6 +28,8 @@ interface GameContextType extends AppState {
   updateGameImage: (gameId: string, imageBase64: string) => void;
   reorderGames: (fromIndex: number, toIndex: number) => void;
   updateUserTag: (userTag: UserTag | undefined) => void;
+  undoLastScore: (participantId: string) => void;
+  setLocale: (locale: Locale) => void;
 }
 
 const STORAGE_KEY = 'scoremaster_data';
@@ -40,6 +43,7 @@ const defaultState: AppState = {
   customGames: [],
   gameOverrides: {},
   gameOrder: [],
+  locale: detectLocale(),
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -56,6 +60,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           customGames: parsed.customGames ?? [],
           gameOverrides: parsed.gameOverrides ?? {},
           gameOrder: parsed.gameOrder ?? [],
+          locale: (parsed.locale as Locale) ?? detectLocale(),
           // migra torneios antigos sem playerIds/status/gamesPlayed
           tournaments: (parsed.tournaments ?? []).map((t: any) => ({
             status: 'active',
@@ -327,6 +332,34 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setState(prev => ({ ...prev, userTag }));
   };
 
+  const setLocale = (locale: Locale) => {
+    setState(prev => ({ ...prev, locale }));
+  };
+
+  const undoLastScore = (participantId: string) => {
+    setState(prev => {
+      if (!prev.currentSession) return prev;
+      const gameConfig = getEffectiveConfig(prev.currentSession.gameId);
+      if (!gameConfig) return prev;
+      const isTeamMode = !!prev.currentSession.teams?.length;
+      if (isTeamMode) {
+        const updatedTeams = (prev.currentSession.teams ?? []).map(team => {
+          if (team.id !== participantId) return team;
+          const newRoundScores = team.roundScores.slice(0, -1);
+          return { ...team, roundScores: newRoundScores, totalScore: newRoundScores.reduce((a, b) => a + b, 0) };
+        });
+        return { ...prev, currentSession: { ...prev.currentSession, teams: calcTeamPositions(updatedTeams, gameConfig.victoryCondition) } };
+      } else {
+        const updatedPlayers = prev.currentSession.players.map(player => {
+          if (player.id !== participantId) return player;
+          const newRoundScores = player.roundScores.slice(0, -1);
+          return { ...player, roundScores: newRoundScores, totalScore: newRoundScores.reduce((a, b) => a + b, 0) };
+        });
+        return { ...prev, currentSession: { ...prev.currentSession, players: calcPositions(updatedPlayers, gameConfig.victoryCondition) } };
+      }
+    });
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -354,6 +387,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updateGameImage,
         reorderGames,
         updateUserTag,
+        undoLastScore,
+        setLocale,
       }}
     >
       {children}

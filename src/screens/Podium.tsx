@@ -4,6 +4,7 @@ import { Home, Share2, Download, Trophy } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import type { GameSession, Player, Team } from '../types';
 import { useGame } from '../context/GameContext';
+import { useTranslation } from '../i18n/useTranslation';
 
 interface PodiumProps {
   session: GameSession;
@@ -15,6 +16,7 @@ export const Podium: React.FC<PodiumProps> = ({ session, onBackToHome }) => {
   const [isSharing, setIsSharing] = useState(false);
   const { availableGames } = useGame();
 
+  const t = useTranslation();
   const gameConfig = availableGames.find(g => g.id === session.gameId);
   if (!gameConfig) return null;
 
@@ -44,7 +46,7 @@ export const Podium: React.FC<PodiumProps> = ({ session, onBackToHome }) => {
           try {
             // Tenta compartilhar diretamente sem verificar canShare (muitos browsers suportam mesmo sem esse método retornar true)
             if (navigator.share) {
-              await navigator.share({ files: [file], title: `Resultado - ${gameConfig.name}`, text: `Confira o resultado da partida de ${gameConfig.name}!` });
+              await navigator.share({ files: [file], title: `${t.podium.title} - ${gameConfig.name}`, text: `${gameConfig.name}` });
               setIsSharing(false);
               return;
             }
@@ -136,16 +138,16 @@ export const Podium: React.FC<PodiumProps> = ({ session, onBackToHome }) => {
             <Trophy style={{ width: '20px', height: '20px', color: gameConfig.themeColor }} />
           </div>
           <div style={{ fontSize: '34px', fontWeight: 900, color: 'white', letterSpacing: '-0.02em', lineHeight: 1 }}>
-            Partida Finalizada
+            {t.podium.title}
           </div>
           <div style={{ fontSize: '17px', color: '#64748b', marginTop: '8px', fontWeight: 600 }}>
             {gameConfig.name}
           </div>
           <div style={{ fontSize: '14px', color: '#475569', marginTop: '4px' }}>
-            {session.currentRound} {session.currentRound === 1 ? 'rodada' : 'rodadas'}
+            {t.podium.roundsPlayed(session.currentRound)}
             {isTeamMode
-              ? ` · ${sortedTeams.length} times`
-              : ` · ${sortedPlayers.length} jogadores`}
+              ? ` · ${sortedTeams.length} ${t.common.teams.toLowerCase()}`
+              : ` · ${sortedPlayers.length} ${t.common.players}`}
           </div>
         </motion.div>
 
@@ -199,7 +201,7 @@ export const Podium: React.FC<PodiumProps> = ({ session, onBackToHome }) => {
         {participants.length > 3 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
             <div style={{ fontSize: '14px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
-              Classificação geral
+              {t.podium.title}
             </div>
             {participants.slice(3).map((item, i) => (
               <motion.div
@@ -261,7 +263,7 @@ export const Podium: React.FC<PodiumProps> = ({ session, onBackToHome }) => {
           }}
         >
           <Home style={{ width: '22px', height: '22px' }} />
-          Início
+          {t.podium.backHome}
         </motion.button>
 
         <motion.button
@@ -279,9 +281,9 @@ export const Podium: React.FC<PodiumProps> = ({ session, onBackToHome }) => {
           }}
         >
           {isSharing ? (
-            <><Download style={{ width: '22px', height: '22px' }} />Gerando...</>
+            <><Download style={{ width: '22px', height: '22px' }} />...</>
           ) : (
-            <><Share2 style={{ width: '22px', height: '22px' }} />Compartilhar</>
+            <><Share2 style={{ width: '22px', height: '22px' }} />{t.podium.shareResult}</>
           )}
         </motion.button>
       </div>
