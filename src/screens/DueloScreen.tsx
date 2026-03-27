@@ -484,6 +484,7 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
   };
 
   const handleTouchEnd = (id: string, e: React.TouchEvent) => {
+    e.preventDefault(); // suprime o click sintetizado pelo browser
     const startY = touchStartY.current[id] ?? 0;
     const endY = e.changedTouches[0].clientY;
     const delta = endY - startY;
@@ -492,7 +493,6 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
     } else if (Math.abs(delta) < 15) {
       addScore(id);
     }
-    // swipe up (delta < -55): ignored / future: manual +N
   };
 
   const handleFinish = () => {

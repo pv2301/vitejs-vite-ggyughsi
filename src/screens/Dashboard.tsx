@@ -122,21 +122,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </motion.button>
           ) : (
             <>
-              {/* Idioma */}
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setLocale(locale === 'en' ? 'pt-BR' : 'en')}
-                style={{
-                  width: '48px', height: '48px', borderRadius: '14px',
-                  border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer',
-                  background: 'rgba(255,255,255,0.07)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '22px', lineHeight: 1,
-                }}
-              >
-                {locale === 'en' ? '🇺🇸' : '🇧🇷'}
-              </motion.button>
-
               {/* Tema */}
               <motion.button
                 whileTap={{ scale: 0.9 }}
@@ -407,6 +392,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div>
                     <p style={{ fontSize: '17px', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>{t.dashboard.menu.shareApp}</p>
                     <p style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>{t.dashboard.menu.shareAppSub}</p>
+                  </div>
+                </motion.button>
+
+                {/* Idioma */}
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => setLocale(locale === 'en' ? 'pt-BR' : 'en')}
+                  style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '18px 20px', borderRadius: '18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.07)', fontSize: '26px' }}>
+                    {locale === 'en' ? '🇺🇸' : '🇧🇷'}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '17px', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>
+                      {locale === 'en' ? 'English' : 'Português (BR)'}
+                    </p>
+                    <p style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>
+                      {locale === 'en' ? 'Tap to switch to Portuguese' : 'Toque para mudar para Inglês'}
+                    </p>
                   </div>
                 </motion.button>
               </div>
