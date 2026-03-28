@@ -21,8 +21,9 @@ type Screen =
   | { type: 'new-game' };
 
 const AppContent: React.FC = () => {
-  const { currentSession, darkMode } = useGame();
+  const { currentSession, darkMode, clearCurrentSession } = useGame();
   const [screen, setScreen] = useState<Screen>({ type: 'dashboard' });
+  const [lastGameId, setLastGameId] = useState<string>('');
 
   useEffect(() => {
     if (currentSession && screen.type !== 'active') {
@@ -30,10 +31,22 @@ const AppContent: React.FC = () => {
     }
   }, [currentSession]);
 
-  const handleSelectGame = (gameId: string) => setScreen({ type: 'setup', gameId });
+  const handleSelectGame = (gameId: string) => {
+    setLastGameId(gameId);
+    setScreen({ type: 'setup', gameId });
+  };
   const handleStartGame = () => setScreen({ type: 'active' });
   const handleFinishGame = () => { if (currentSession) setScreen({ type: 'podium', session: currentSession }); };
   const handleBackToHome = () => setScreen({ type: 'dashboard' });
+  // Voltar do jogo ativo → volta para o setup do mesmo jogo (não para o menu)
+  const handleQuitGame = () => {
+    clearCurrentSession();
+    if (lastGameId) {
+      setScreen({ type: 'setup', gameId: lastGameId });
+    } else {
+      setScreen({ type: 'dashboard' });
+    }
+  };
   const handleOpenHistory = () => setScreen({ type: 'history' });
   const handleOpenTournaments = () => setScreen({ type: 'tournaments' });
   const handleOpenPlayers = () => setScreen({ type: 'players' });
@@ -55,7 +68,7 @@ const AppContent: React.FC = () => {
       case 'setup':
         return <GameSetup gameId={screen.gameId} onBack={handleBackToHome} onStartGame={handleStartGame} />;
       case 'active':
-        return <ActiveGame onFinish={handleFinishGame} onQuit={handleBackToHome} />;
+        return <ActiveGame onFinish={handleFinishGame} onQuit={handleQuitGame} />;
       case 'podium':
         return <Podium session={screen.session} onBackToHome={handleBackToHome} />;
       case 'history':

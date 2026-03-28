@@ -422,7 +422,8 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
   const pointsPerTap = gameConfig?.duelPointsPerTap ?? 1;
   const timerEnabled = gameConfig?.duelTimerEnabled ?? false;
 
-  const [isLandscape, setIsLandscape] = useState(() => window.matchMedia('(orientation: landscape)').matches);
+  const getIsLandscape = () => window.innerWidth > window.innerHeight;
+  const [isLandscape, setIsLandscape] = useState(getIsLandscape);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(timerEnabled);
   const [flash, setFlash] = useState<Record<string, boolean>>({});
@@ -434,12 +435,16 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchStartY = useRef<Record<string, number>>({});
 
-  // Orientation — matchMedia é o método mais confiável em mobile
+  // Orientation — combina resize + orientationchange para máxima compatibilidade
   useEffect(() => {
-    const mq = window.matchMedia('(orientation: landscape)');
-    const handler = (e: MediaQueryListEvent) => setIsLandscape(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
+    const update = () => setIsLandscape(window.innerWidth > window.innerHeight);
+    const delayedUpdate = () => setTimeout(update, 80);
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', delayedUpdate);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', delayedUpdate);
+    };
   }, []);
 
   // Timer
