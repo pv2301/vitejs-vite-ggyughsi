@@ -405,25 +405,24 @@ const WinnerOverlay: React.FC<{
 export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) => {
   const { currentSession, availableGames, updatePlayerScore, updateTeamScore, undoLastScore, finishSession } = useGame();
 
-  if (!currentSession) return null;
-
-  const gameConfig = availableGames.find(g => g.id === currentSession.gameId);
-  const isTeamMode = !!currentSession.teams?.length;
-  const participants: Participant[] = isTeamMode
-    ? (currentSession.teams ?? [])
-    : currentSession.players;
-
-  // Fixa a ordem visual dos painéis pelo ID original (não muda quando o score reordena o array)
-  const pinnedP1Id = useRef(participants[0]?.id ?? '');
-  const pinnedP2Id = useRef(participants[1]?.id ?? '');
-  const p1 = participants.find(p => p.id === pinnedP1Id.current) ?? participants[0];
-  const p2 = participants.find(p => p.id === pinnedP2Id.current) ?? participants[1];
-
+  // Derivações seguras antes dos hooks (usam optional chaining)
+  const gameConfig = availableGames.find(g => g.id === currentSession?.gameId);
+  const isTeamMode = !!currentSession?.teams?.length;
   const pointsPerTap = gameConfig?.duelPointsPerTap ?? 1;
   const timerEnabled = gameConfig?.duelTimerEnabled ?? false;
 
-  const getIsLandscape = () => window.innerWidth > window.innerHeight;
-  const [isLandscape, setIsLandscape] = useState(getIsLandscape);
+  // Participantes iniciais (para pinnar IDs nos refs)
+  const initialParticipants: Participant[] = currentSession
+    ? (isTeamMode ? (currentSession.teams ?? []) : currentSession.players)
+    : [];
+
+  // ── TODOS OS HOOKS ANTES DE QUALQUER RETURN CONDICIONAL ──
+  const pinnedP1Id = useRef(initialParticipants[0]?.id ?? '');
+  const pinnedP2Id = useRef(initialParticipants[1]?.id ?? '');
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const touchStartY = useRef<Record<string, number>>({});
+
+  const [isLandscape, setIsLandscape] = useState(() => window.innerWidth > window.innerHeight);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(timerEnabled);
   const [flash, setFlash] = useState<Record<string, boolean>>({});
@@ -432,41 +431,52 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
   const [nameOverrides, setNameOverrides] = useState<Record<string, string>>({});
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const touchStartY = useRef<Record<string, number>>({});
-
-  // Orientation — combina resize + orientationchange para máxima compatibilidade
+  // Orientação — hooks registrados antes do return null para funcionar corretamente
   useEffect(() => {
     const update = () => setIsLandscape(window.innerWidth > window.innerHeight);
-    const delayedUpdate = () => setTimeout(update, 80);
+    const delayed = () => { setTimeout(update, 100); };
     window.addEventListener('resize', update);
-    window.addEventListener('orientationchange', delayedUpdate);
+    window.addEventListener('orientationchange', delayed);
     return () => {
       window.removeEventListener('resize', update);
-      window.removeEventListener('orientationchange', delayedUpdate);
+      window.removeEventListener('orientationchange', delayed);
     };
   }, []);
 
   // Timer
   useEffect(() => {
     if (timerEnabled && timerRunning) {
-      timerRef.current = setInterval(() => setTimerSeconds(s => s + 1), 1000);
+      timerRef.current = setInterval(() => setTimerSeconds((s: number) => s + 1), 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [timerRunning, timerEnabled]);
 
-  // Check win condition whenever scores change
+  // Win condition
   useEffect(() => {
-    if (!gameConfig?.winningScore || winnerId) return;
-    const winner = participants.find(p => p.totalScore >= gameConfig.winningScore!);
+    if (!currentSession || !gameConfig?.winningScore || winnerId) return;
+    const parts: Participant[] = isTeamMode ? (currentSession.teams ?? []) : currentSession.players;
+    const winner = parts.find(p => (p.totalScore ?? 0) >= gameConfig.winningScore!);
     if (winner) setWinnerId(winner.id);
-  }, [currentSession.players, currentSession.teams]);
+  }, [currentSession?.players, currentSession?.teams]);
+
+  // ── GUARD — após todos os hooks ──
+  if (!currentSession) return null;
+
+  const participants: Participant[] = isTeamMode
+    ? (currentSession.teams ?? [])
+    : currentSession.players;
+
+  // Usa IDs pinnados para manter posição visual fixa independente da reordenação por score
+  const p1 = participants.find(p => p.id === pinnedP1Id.current) ?? participants[0];
+  const p2 = participants.find(p => p.id === pinnedP2Id.current) ?? participants[1];
+
+  if (!p1 || !p2) return null;
 
   const triggerFlash = (id: string) => {
-    setFlash(prev => ({ ...prev, [id]: true }));
-    setTimeout(() => setFlash(prev => ({ ...prev, [id]: false })), 130);
+    setFlash((prev: Record<string, boolean>) => ({ ...prev, [id]: true }));
+    setTimeout(() => setFlash((prev: Record<string, boolean>) => ({ ...prev, [id]: false })), 130);
   };
 
   const addScore = (id: string) => {
@@ -486,7 +496,7 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
   };
 
   const handleTouchEnd = (id: string, e: React.TouchEvent) => {
-    e.preventDefault(); // suprime o click sintetizado pelo browser
+    e.preventDefault();
     const startY = touchStartY.current[id] ?? 0;
     const endY = e.changedTouches[0].clientY;
     const delta = endY - startY;
@@ -506,8 +516,6 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
     localStorage.setItem(TUTORIAL_KEY, '1');
     setShowTutorial(false);
   };
-
-  if (!p1 || !p2) return null;
 
   return (
     <div style={{
