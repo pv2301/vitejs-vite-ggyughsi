@@ -21,16 +21,18 @@ interface TeamRowProps {
   showInput: boolean;
   themeColor: string;
   allowNegative?: boolean;
+  victoryCondition?: string;
   roundPlaceholder?: string;
   onScoreSubmit?: (score: number) => void;
   onWinnerSelect?: () => void;
 }
 
-const TeamRow: React.FC<TeamRowProps> = ({ team, isLeader, isLast, mode, showInput, themeColor, allowNegative = false, roundPlaceholder, onScoreSubmit, onWinnerSelect }) => {
+const TeamRow: React.FC<TeamRowProps> = ({ team, isLeader, isLast, mode, showInput, themeColor, allowNegative = false, victoryCondition, roundPlaceholder, onScoreSubmit, onWinnerSelect }) => {
   const tRow = useTranslation();
   const placeholder = roundPlaceholder ?? tRow.activeGame.roundPlaceholder;
   const [inputValue, setInputValue] = React.useState('');
   const [isNegative, setIsNegative] = React.useState(false);
+  const negativeColor = (allowNegative && victoryCondition === 'lowest_score') ? '#60a5fa' : '#f87171';
 
   const handleSubmit = () => {
     const raw = parseFloat(inputValue);
@@ -124,7 +126,7 @@ const TeamRow: React.FC<TeamRowProps> = ({ team, isLeader, isLast, mode, showInp
             flex: 1, minWidth: 0, display: 'flex', alignItems: 'stretch',
             background: 'rgba(15,23,42,0.7)', borderRadius: '14px',
             border: inputValue
-              ? `2px solid ${isNegative ? '#ef4444' : themeColor}`
+              ? `2px solid ${isNegative ? negativeColor : themeColor}`
               : '2px solid rgba(71,85,105,0.6)',
             overflow: 'hidden', transition: 'border-color 0.15s', boxSizing: 'border-box',
           }}>
@@ -134,13 +136,13 @@ const TeamRow: React.FC<TeamRowProps> = ({ team, isLeader, isLast, mode, showInp
                 style={{
                   flexShrink: 0, width: '44px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: isNegative ? 'rgba(239,68,68,0.18)' : 'transparent',
+                  background: isNegative ? `${negativeColor}22` : 'transparent',
                   border: 'none',
                   borderRight: isNegative
-                    ? '1.5px solid rgba(239,68,68,0.35)'
+                    ? `1.5px solid ${negativeColor}55`
                     : '1.5px solid rgba(71,85,105,0.4)',
                   cursor: 'pointer',
-                  color: isNegative ? '#f87171' : '#475569',
+                  color: isNegative ? negativeColor : '#475569',
                   fontSize: '22px', fontWeight: 900, lineHeight: 1,
                   transition: 'background 0.15s, color 0.15s', paddingBottom: '2px',
                 }}
@@ -158,7 +160,7 @@ const TeamRow: React.FC<TeamRowProps> = ({ team, isLeader, isLast, mode, showInp
               style={{
                 flex: 1, minWidth: 0, padding: '14px',
                 background: 'transparent',
-                color: isNegative ? '#f87171' : 'white',
+                color: isNegative ? negativeColor : 'white',
                 fontSize: '17px', fontWeight: 700,
                 border: 'none', outline: 'none', boxSizing: 'border-box',
               }}
@@ -188,7 +190,7 @@ const TeamRow: React.FC<TeamRowProps> = ({ team, isLeader, isLast, mode, showInp
           {team.roundScores.map((score, i) => (
             <span key={i} style={{
               padding: '4px 10px', background: 'rgba(71,85,105,0.4)', borderRadius: '999px',
-              fontSize: '13px', fontWeight: 600, color: score > 0 ? '#94a3b8' : score < 0 ? '#f87171' : '#64748b',
+              fontSize: '13px', fontWeight: 600, color: score > 0 ? '#94a3b8' : score < 0 ? negativeColor : '#64748b',
               whiteSpace: 'nowrap', flexShrink: 0, border: '1px solid rgba(71,85,105,0.3)',
             }}>
               R{i + 1}: {score > 0 ? '+' : ''}{score}
@@ -241,6 +243,13 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
   const allScored = isTeamMode
     ? (currentSession.teams ?? []).every(t => t.roundScores.length === currentSession.currentRound)
     : currentSession.players.every(p => p.roundScores.length === currentSession.currentRound);
+
+  // Pontuação parcial: ao menos 1 pontuou mas não todos (só no modo numérico)
+  const someScored = !isWinnerMode && !allScored && (isTeamMode
+    ? (currentSession.teams ?? []).some((tm: Team) => tm.roundScores.length === currentSession.currentRound)
+    : currentSession.players.some((pl: { roundScores: unknown[] }) => pl.roundScores.length === currentSession.currentRound));
+
+  const finishDisabled = !isWinnerMode && (allScored || someScored);
 
   // Auto-advance no modo numérico
   useEffect(() => {
@@ -411,6 +420,7 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
                   showInput={isWinnerMode ? true : team.roundScores.length < currentSession.currentRound}
                   themeColor={gameConfig.themeColor}
                   allowNegative={gameConfig.allowNegative}
+                  victoryCondition={gameConfig.victoryCondition}
                   onScoreSubmit={(score) => updateTeamScore(team.id, score)}
                   onWinnerSelect={() => handleWinnerSelect(team.id)}
                 />
@@ -427,6 +437,7 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
                   showInput={isWinnerMode ? true : player.roundScores.length < currentSession.currentRound}
                   themeColor={gameConfig.themeColor}
                   allowNegative={gameConfig.allowNegative}
+                  victoryCondition={gameConfig.victoryCondition}
                 />
               ))
             }
@@ -444,13 +455,18 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
         <motion.button
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={handleFinishGame}
+          whileTap={finishDisabled ? {} : { scale: 0.97 }}
+          onClick={finishDisabled ? undefined : handleFinishGame}
+          disabled={finishDisabled}
           style={{
-            flex: 1, height: '68px', borderRadius: '16px', border: 'none', cursor: 'pointer',
-            background: gameConfig.themeColor, fontSize: '18px', fontWeight: 800,
-            color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-            boxShadow: `0 8px 24px ${gameConfig.themeColor}55`,
+            flex: 1, height: '68px', borderRadius: '16px', border: 'none',
+            cursor: finishDisabled ? 'not-allowed' : 'pointer',
+            background: finishDisabled ? 'rgba(71,85,105,0.5)' : gameConfig.themeColor,
+            fontSize: '18px', fontWeight: 800,
+            color: finishDisabled ? 'rgba(255,255,255,0.4)' : 'white',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+            boxShadow: finishDisabled ? 'none' : `0 8px 24px ${gameConfig.themeColor}55`,
+            transition: 'background 0.2s, box-shadow 0.2s',
           }}
         >
           <Trophy style={{ width: '22px', height: '22px' }} />

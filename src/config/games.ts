@@ -43,15 +43,6 @@ export const GAME_CONFIGS: GameConfig[] = [
     icon: 'mountain',
   },
   {
-    id: 'generic',
-    name: 'Genérico',
-    themeColor: '#8b5cf6',
-    victoryCondition: 'highest_score',
-    allowNegative: true,
-    description: 'Para qualquer jogo de mesa',
-    icon: 'dices',
-  },
-  {
     id: 'duelo',
     name: 'Modo Duelo',
     themeColor: '#f97316',
@@ -63,6 +54,15 @@ export const GAME_CONFIGS: GameConfig[] = [
     isBuiltin: true,
     duelPointsPerTap: 1,
     duelTimerEnabled: false,
+  },
+  {
+    id: 'generic',
+    name: 'Personalizado',
+    themeColor: '#8b5cf6',
+    victoryCondition: 'highest_score',
+    allowNegative: true,
+    description: 'Para qualquer jogo de mesa',
+    icon: 'dices',
   },
 ];
 
