@@ -690,9 +690,7 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
             border: '1.5px solid rgba(255,255,255,0.1)',
           }}>
             <span style={{ fontSize: '17px', color: '#94a3b8', fontWeight: 700, textAlign: 'center' }}>
-              {isDuelo
-                ? (teamMode ? t.gameSetup.exactTwoTeams : t.gameSetup.exactTwo)
-                : (teamMode ? t.gameSetup.minTeams : t.gameSetup.minPlayers)}
+              {teamMode ? t.gameSetup.minTeams : t.gameSetup.minPlayers}
             </span>
           </div>
         )}

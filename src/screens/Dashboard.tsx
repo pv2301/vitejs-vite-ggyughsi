@@ -37,7 +37,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     longPressTimer.current = setTimeout(() => {
       longPressFired.current = true;
       setReorderMode(true);
-    }, 600);
+    }, 3000);
   }, []);
 
   const cancelLongPress = useCallback(() => {

@@ -100,16 +100,6 @@ export const GameCard: React.FC<GameCardProps> = ({ game, onClick, dimmed = fals
         </div>
         {/* Badges — linha única, não quebra */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', flexWrap: 'nowrap' }}>
-          {game.winningScore && (
-            <span style={{
-              fontSize: '11px', fontWeight: 700, color: game.themeColor,
-              background: `${game.themeColor}25`, padding: '2px 8px',
-              borderRadius: '999px', border: `1px solid ${game.themeColor}55`,
-              whiteSpace: 'nowrap', flexShrink: 0,
-            }}>
-              {t.gameCard.targetScore(game.winningScore)}
-            </span>
-          )}
           <span style={{
             fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.4)',
             background: 'rgba(255,255,255,0.07)', padding: '2px 8px',

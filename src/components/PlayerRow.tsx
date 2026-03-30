@@ -14,6 +14,7 @@ interface PlayerRowProps {
   showInput?: boolean;
   themeColor: string;
   allowNegative?: boolean;
+  victoryCondition?: string;
 }
 
 export const PlayerRow: React.FC<PlayerRowProps> = ({
@@ -26,7 +27,9 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
   showInput = true,
   themeColor,
   allowNegative = false,
+  victoryCondition,
 }) => {
+  const negativeColor = (allowNegative && victoryCondition === 'lowest_score') ? '#60a5fa' : '#f87171';
   const t = useTranslation();
   const [inputValue, setInputValue] = React.useState('');
   const [isNegative, setIsNegative] = React.useState(false);
@@ -146,7 +149,7 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
             background: 'rgba(15,23,42,0.7)',
             borderRadius: '14px',
             border: inputValue
-              ? `2px solid ${isNegative ? '#ef4444' : themeColor}`
+              ? `2px solid ${isNegative ? negativeColor : themeColor}`
               : '2px solid rgba(71,85,105,0.6)',
             overflow: 'hidden',
             transition: 'border-color 0.15s',
@@ -162,13 +165,13 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: isNegative ? 'rgba(239,68,68,0.18)' : 'transparent',
+                  background: isNegative ? (negativeColor === '#60a5fa' ? 'rgba(96,165,250,0.18)' : 'rgba(239,68,68,0.18)') : 'transparent',
                   border: 'none',
                   borderRight: isNegative
-                    ? '1.5px solid rgba(239,68,68,0.35)'
+                    ? `1.5px solid ${negativeColor}55`
                     : '1.5px solid rgba(71,85,105,0.4)',
                   cursor: 'pointer',
-                  color: isNegative ? '#f87171' : '#475569',
+                  color: isNegative ? negativeColor : '#475569',
                   fontSize: '22px',
                   fontWeight: 900,
                   lineHeight: 1,
@@ -191,7 +194,7 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
                 minWidth: 0,
                 padding: '14px',
                 background: 'transparent',
-                color: isNegative ? '#f87171' : 'white',
+                color: isNegative ? negativeColor : 'white',
                 fontSize: '17px',
                 fontWeight: 700,
                 border: 'none',
@@ -244,7 +247,7 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
                 borderRadius: '999px',
                 fontSize: '13px',
                 fontWeight: 600,
-                color: score > 0 ? '#94a3b8' : score < 0 ? '#f87171' : '#64748b',
+                color: score > 0 ? '#94a3b8' : score < 0 ? negativeColor : '#64748b',
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
                 border: '1px solid rgba(71,85,105,0.3)',
