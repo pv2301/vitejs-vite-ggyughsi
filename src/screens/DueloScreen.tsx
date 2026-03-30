@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, RotateCcw, Timer, Play, Pause, Trophy, Pencil } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Timer, Play, Pause, Trophy, Palette } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 import { useTranslation } from '../i18n/useTranslation';
 import type { Player, Team } from '../types';
@@ -24,6 +24,19 @@ type Participant = (Player | Team) & { avatar?: string; playerNames?: string[] }
 
 const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
 
+const EMOJI_LIST = [
+  '🦁','🐯','🦊','🐻','🐼','🐸','🐧','🦅','🐬','🦈','🐉','🦄',
+  '🐺','🐮','🐱','🐶','🦝','🐨','⚽','🏀','🏈','🎾','🏐','🏓',
+  '🥊','🎯','🏆','⚡','🎮','🎲','🏄','🎳',
+];
+const DEFAULT_EMOJIS = ['🦁', '🐯'];
+
+const PANEL_COLORS = [
+  '#ef4444','#f97316','#f59e0b','#84cc16','#22c55e','#14b8a6',
+  '#3b82f6','#6366f1','#8b5cf6','#ec4899','#0ea5e9','#f43f5e',
+  '#64748b','#1e293b','#7c3aed','#be123c',
+];
+
 // ── Panel ────────────────────────────────────────────────────────────────────
 
 const Panel: React.FC<{
@@ -32,16 +45,18 @@ const Panel: React.FC<{
   flash: boolean;
   isLandscape: boolean;
   displayName?: string;
+  emoji: string;
+  panelColor: string;
   onTouchStart: (e: React.TouchEvent) => void;
   onTouchEnd: (e: React.TouchEvent) => void;
   onClick: () => void;
   onEditName: () => void;
-}> = ({ participant, isTeam, flash, isLandscape, displayName, onTouchStart, onTouchEnd, onClick, onEditName }) => {
+  onEditEmoji: () => void;
+  onEditColor: () => void;
+}> = ({ participant, isTeam, flash, isLandscape, displayName, emoji, panelColor, onTouchStart, onTouchEnd, onClick, onEditName, onEditEmoji, onEditColor }) => {
   const tPanel = useTranslation();
-  const color = participant.color;
   const name = displayName ?? participant.name;
   const score = participant.totalScore;
-  const avatarEmoji = !isTeam ? (participant as Player).avatar : undefined;
 
   return (
     <div
@@ -54,7 +69,7 @@ const Panel: React.FC<{
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        background: color,
+        background: panelColor,
         position: 'relative',
         cursor: 'pointer',
         userSelect: 'none',
@@ -71,50 +86,57 @@ const Panel: React.FC<{
         pointerEvents: 'none',
       }} />
 
+      {/* Pincel — troca cor (canto superior) */}
+      <button
+        onClick={(e: React.MouseEvent) => { e.stopPropagation(); onEditColor(); }}
+        onTouchEnd={(e: React.TouchEvent) => { e.stopPropagation(); e.preventDefault(); onEditColor(); }}
+        style={{
+          position: 'absolute', top: '14px', right: '14px',
+          background: 'rgba(0,0,0,0.18)', border: 'none', borderRadius: '50%',
+          width: '30px', height: '30px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', zIndex: 2,
+        }}
+      >
+        <Palette size={14} color="rgba(255,255,255,0.65)" />
+      </button>
+
       {/* Info do participante — topo do painel */}
       <div style={{
         position: 'absolute',
         top: isLandscape ? '18px' : '22px',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
       }}>
-        {/* Avatar / iniciais */}
-        <div style={{
-          width: isLandscape ? '52px' : '60px',
-          height: isLandscape ? '52px' : '60px',
-          borderRadius: '50%',
-          background: 'rgba(0,0,0,0.2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: isLandscape ? '26px' : '30px',
-          fontWeight: 900,
-          color: 'white',
-          border: '3px solid rgba(255,255,255,0.3)',
-        }}>
-          {avatarEmoji ?? getInitials(name)}
+        {/* Emoji — clique para trocar */}
+        <div
+          onClick={(e: React.MouseEvent) => { e.stopPropagation(); onEditEmoji(); }}
+          onTouchEnd={(e: React.TouchEvent) => { e.stopPropagation(); e.preventDefault(); onEditEmoji(); }}
+          style={{
+            fontSize: isLandscape ? '38px' : '48px',
+            lineHeight: 1,
+            cursor: 'pointer',
+            filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))',
+          }}
+        >
+          {emoji}
         </div>
-        {/* Nome + lápis */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{
+        {/* Nome — clique para editar */}
+        <div
+          onClick={(e: React.MouseEvent) => { e.stopPropagation(); onEditName(); }}
+          onTouchEnd={(e: React.TouchEvent) => { e.stopPropagation(); e.preventDefault(); onEditName(); }}
+          style={{
             fontSize: isLandscape ? '16px' : '18px',
             fontWeight: 900,
             color: 'white',
             textShadow: '0 2px 8px rgba(0,0,0,0.35)',
             letterSpacing: '-0.01em',
-            maxWidth: isLandscape ? '110px' : '160px',
+            maxWidth: isLandscape ? '140px' : '200px',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
-            {name}
-          </div>
-          <button
-            onClick={(e: React.MouseEvent) => { e.stopPropagation(); onEditName(); }}
-            onTouchEnd={(e: React.TouchEvent) => e.stopPropagation()}
-            style={{
-              background: 'rgba(0,0,0,0.25)', border: 'none', borderRadius: '50%',
-              width: '26px', height: '26px', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
-            }}
-          >
-            <Pencil size={13} color="rgba(255,255,255,0.75)" />
-          </button>
+            textAlign: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          {name}
         </div>
         {/* Membros do time */}
         {isTeam && (participant as Team).playerNames?.length > 0 && (
@@ -430,6 +452,10 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
   const [winnerId, setWinnerId] = useState<string | null>(null);
   const [nameOverrides, setNameOverrides] = useState<Record<string, string>>({});
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [emojiOverrides, setEmojiOverrides] = useState<Record<string, string>>({});
+  const [colorOverrides, setColorOverrides] = useState<Record<string, string>>({});
+  const [editingEmojiId, setEditingEmojiId] = useState<string | null>(null);
+  const [editingColorId, setEditingColorId] = useState<string | null>(null);
 
   // Orientação — hooks registrados antes do return null para funcionar corretamente
   useEffect(() => {
@@ -471,6 +497,11 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
   // Usa IDs pinnados para manter posição visual fixa independente da reordenação por score
   const p1 = participants.find(p => p.id === pinnedP1Id.current) ?? participants[0];
   const p2 = participants.find(p => p.id === pinnedP2Id.current) ?? participants[1];
+
+  const p1Emoji = emojiOverrides[p1?.id] ?? DEFAULT_EMOJIS[0];
+  const p2Emoji = emojiOverrides[p2?.id] ?? DEFAULT_EMOJIS[1];
+  const p1Color = colorOverrides[p1?.id] ?? p1?.color;
+  const p2Color = colorOverrides[p2?.id] ?? p2?.color;
 
   if (!p1 || !p2) return null;
 
@@ -532,10 +563,14 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
         flash={!!flash[p1.id]}
         isLandscape={isLandscape}
         displayName={nameOverrides[p1.id]}
+        emoji={p1Emoji}
+        panelColor={p1Color}
         onTouchStart={e => handleTouchStart(p1.id, e)}
         onTouchEnd={e => handleTouchEnd(p1.id, e)}
         onClick={() => addScore(p1.id)}
         onEditName={() => setEditingNameId(p1.id)}
+        onEditEmoji={() => setEditingEmojiId(p1.id)}
+        onEditColor={() => setEditingColorId(p1.id)}
       />
 
       {/* Divider central */}
@@ -557,10 +592,14 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
         flash={!!flash[p2.id]}
         isLandscape={isLandscape}
         displayName={nameOverrides[p2.id]}
+        emoji={p2Emoji}
+        panelColor={p2Color}
         onTouchStart={e => handleTouchStart(p2.id, e)}
         onTouchEnd={e => handleTouchEnd(p2.id, e)}
         onClick={() => addScore(p2.id)}
         onEditName={() => setEditingNameId(p2.id)}
+        onEditEmoji={() => setEditingEmojiId(p2.id)}
+        onEditColor={() => setEditingColorId(p2.id)}
       />
 
       {/* Overlays */}
@@ -573,6 +612,104 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
             onFinish={handleFinish}
             onContinue={() => setWinnerId(null)}
           />
+        )}
+        {editingEmojiId && !showTutorial && (
+          <motion.div
+            key="edit-emoji"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)',
+              backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: '20px', zIndex: 60, padding: '32px',
+            }}
+            onClick={() => setEditingEmojiId(null)}
+          >
+            <div
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%', maxWidth: '320px' }}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            >
+              <div style={{ fontSize: '22px', fontWeight: 900, color: 'white', letterSpacing: '-0.01em' }}>
+                {(() => {
+                  const p = participants.find(p => p.id === editingEmojiId);
+                  return nameOverrides[editingEmojiId] ?? p?.name ?? '';
+                })()}
+              </div>
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)',
+                gap: '8px', width: '100%',
+              }}>
+                {EMOJI_LIST.map(em => (
+                  <button
+                    key={em}
+                    onClick={() => {
+                      setEmojiOverrides((prev: Record<string, string>) => ({ ...prev, [editingEmojiId]: em }));
+                      setEditingEmojiId(null);
+                    }}
+                    style={{
+                      width: '100%', aspectRatio: '1', borderRadius: '10px', border: 'none',
+                      background: (emojiOverrides[editingEmojiId] === em) ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+                      fontSize: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: (emojiOverrides[editingEmojiId] === em) ? '0 0 0 2px white' : 'none',
+                    }}
+                  >
+                    {em}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+        {editingColorId && !showTutorial && (
+          <motion.div
+            key="edit-color"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)',
+              backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: '20px', zIndex: 60, padding: '32px',
+            }}
+            onClick={() => setEditingColorId(null)}
+          >
+            <div
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%', maxWidth: '320px' }}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            >
+              <div style={{ fontSize: '22px', fontWeight: 900, color: 'white', letterSpacing: '-0.01em' }}>
+                {(() => {
+                  const p = participants.find(p => p.id === editingColorId);
+                  return nameOverrides[editingColorId] ?? p?.name ?? '';
+                })()}
+              </div>
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '10px', width: '100%',
+              }}>
+                {PANEL_COLORS.map(col => {
+                  const currentColor = colorOverrides[editingColorId] ?? participants.find(p => p.id === editingColorId)?.color;
+                  return (
+                    <button
+                      key={col}
+                      onClick={() => {
+                        setColorOverrides((prev: Record<string, string>) => ({ ...prev, [editingColorId]: col }));
+                        setEditingColorId(null);
+                      }}
+                      style={{
+                        width: '100%', aspectRatio: '1', borderRadius: '14px', border: 'none',
+                        background: col, cursor: 'pointer',
+                        boxShadow: currentColor === col ? '0 0 0 3px white' : 'none',
+                        transform: currentColor === col ? 'scale(1.08)' : 'scale(1)',
+                        transition: 'transform 0.1s',
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
         )}
         {editingNameId && !showTutorial && (() => {
           const editParticipant = participants.find(p => p.id === editingNameId);
