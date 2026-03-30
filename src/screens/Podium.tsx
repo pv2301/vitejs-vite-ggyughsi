@@ -46,7 +46,7 @@ export const Podium: React.FC<PodiumProps> = ({ session, onBackToHome }) => {
           try {
             // Tenta compartilhar diretamente sem verificar canShare (muitos browsers suportam mesmo sem esse método retornar true)
             if (navigator.share) {
-              await navigator.share({ files: [file], title: `${t.podium.title} - ${gameConfig.name}`, text: `${gameConfig.name}` });
+              await navigator.share({ files: [file] });
               setIsSharing(false);
               return;
             }
