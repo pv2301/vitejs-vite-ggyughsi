@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, X, AlertCircle, Crown, TrendingDown, Plus, Timer, Pause, Play, RotateCcw } from 'lucide-react';
+import { Trophy, X, AlertCircle, Crown, TrendingDown, Plus, Timer, Pause, Play, RotateCcw, Skull, UserRoundX, Undo2, ChevronDown, ChevronUp } from 'lucide-react';
 import { PlayerRow } from '../components/PlayerRow';
 import { DueloScreen } from './DueloScreen';
 import { useGame } from '../context/GameContext';
@@ -204,9 +204,11 @@ const TeamRow: React.FC<TeamRowProps> = ({ team, isLeader, isLast, mode, showInp
 
 // ── ActiveGame ────────────────────────────────────────────────────────────────
 export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
-  const { currentSession, availableGames, updatePlayerScore, updateTeamScore, recordRoundWinner, nextRound, finishSession } = useGame();
+  const { currentSession, availableGames, updatePlayerScore, updateTeamScore, recordRoundWinner, nextRound, finishSession, eliminatePlayer, reinstatePlayer } = useGame();
   const t = useTranslation();
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const [showEliminateSheet, setShowEliminateSheet] = useState(false);
+  const [eliminatedCollapsed, setEliminatedCollapsed] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(true);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -251,13 +253,21 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
 
   const finishDisabled = !isWinnerMode && (allScored || someScored);
 
-  // Auto-advance no modo numérico
+  // Auto-advance no modo numérico (respeitando maxRounds)
+  const maxRounds = gameConfig.maxRounds;
+  const isLastRound = maxRounds ? currentSession.currentRound >= maxRounds : false;
+
   useEffect(() => {
     if (!isWinnerMode && allScored && currentSession.status === 'active') {
+      // Se atingiu o máximo de rodadas, finaliza o jogo
+      if (isLastRound) {
+        const timer = setTimeout(() => { handleFinishGame(); }, 2000);
+        return () => clearTimeout(timer);
+      }
       const timer = setTimeout(() => { nextRound(); }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [allScored, isWinnerMode, currentSession.currentRound]);
+  }, [allScored, isWinnerMode, currentSession.currentRound, isLastRound]);
 
   const handleWinnerSelect = (winnerId: string) => {
     if (navigator.vibrate) navigator.vibrate(40);
@@ -280,6 +290,39 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
   const winConditionMet = checkWinCondition();
   const participantCount = isTeamMode ? (currentSession.teams?.length ?? 0) : currentSession.players.length;
 
+  // ── Eliminação ──
+  const isEliminationMode = !!gameConfig.eliminationMode;
+  const activePlayers = isTeamMode
+    ? (currentSession.teams ?? []).filter(t => !t.eliminated)
+    : currentSession.players.filter(p => !p.eliminated);
+  const eliminatedPlayers = isTeamMode
+    ? (currentSession.teams ?? []).filter(t => t.eliminated)
+    : currentSession.players.filter(p => p.eliminated);
+  const activeCount = activePlayers.length;
+  const eliminatedCount = eliminatedPlayers.length;
+  const lastOneStanding = isEliminationMode && activeCount === 1 && eliminatedCount > 0;
+
+  // Auto-finish quando resta 1 jogador no modo eliminação
+  useEffect(() => {
+    if (lastOneStanding && currentSession.status === 'active') {
+      const timer = setTimeout(() => { handleFinishGame(); }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [lastOneStanding, currentSession.status]);
+
+  // Auto-eliminação por score threshold
+  useEffect(() => {
+    if (!isEliminationMode || gameConfig.eliminationTrigger !== 'score_threshold') return;
+    if (gameConfig.eliminationThreshold === undefined) return;
+    const threshold = gameConfig.eliminationThreshold;
+    const participants = isTeamMode ? (currentSession.teams ?? []) : currentSession.players;
+    participants.forEach((p: any) => {
+      if (!p.eliminated && (p.totalScore ?? 0) <= threshold && p.roundScores.length > 0) {
+        eliminatePlayer(p.id);
+      }
+    });
+  }, [isTeamMode ? currentSession.teams : currentSession.players]);
+
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)', paddingBottom: '160px' }}>
       <motion.div
@@ -300,6 +343,7 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
             <div style={{ fontSize: '15px', color: '#64748b', marginTop: '4px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span>
                 {t.activeGame.roundLabel} {currentSession.currentRound}
+                {maxRounds ? ` de ${maxRounds}` : ''}
                 {isTeamMode && t.activeGame.teamsLabel}
                 {isWinnerMode && t.activeGame.winnerLabel}
                 {!isTeamMode && !isWinnerMode && t.activeGame.playersLabel(participantCount)}
@@ -370,6 +414,35 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
           </div>
         )}
 
+        {/* ── Banner última rodada (maxRounds) ── */}
+        {isLastRound && !allScored && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{
+              marginBottom: '16px', padding: '14px 18px',
+              background: 'rgba(251,146,60,0.12)', border: '1.5px solid rgba(251,146,60,0.5)',
+              borderRadius: '14px', fontSize: '14px', color: '#fb923c', fontWeight: 700, textAlign: 'center',
+            }}
+          >
+            🏁 Última rodada! Rodada {currentSession.currentRound} de {maxRounds}
+          </motion.div>
+        )}
+
+        {isLastRound && allScored && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{
+              marginBottom: '16px', padding: '14px 18px',
+              background: 'rgba(234,179,8,0.15)', border: '1.5px solid rgba(234,179,8,0.5)',
+              borderRadius: '14px', fontSize: '14px', color: '#eab308', fontWeight: 700, textAlign: 'center',
+            }}
+          >
+            🎉 Jogo finalizado! Calculando resultado...
+          </motion.div>
+        )}
+
         {/* ── Alerta de vitória ── */}
         {winConditionMet && (
           <motion.div
@@ -406,16 +479,16 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
           </motion.div>
         )}
 
-        {/* ── Lista de participantes ── */}
+        {/* ── Lista de participantes (ativos) ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <AnimatePresence mode="popLayout">
             {isTeamMode
-              ? (currentSession.teams ?? []).map((team) => (
+              ? (currentSession.teams ?? []).filter(t => !t.eliminated).map((team) => (
                 <TeamRow
                   key={team.id}
                   team={team}
                   isLeader={team.position === 1}
-                  isLast={team.position === (currentSession.teams?.length ?? 0)}
+                  isLast={team.position === activeCount}
                   mode={isWinnerMode ? 'winner' : 'numeric'}
                   showInput={isWinnerMode ? true : team.roundScores.length < currentSession.currentRound}
                   themeColor={gameConfig.themeColor}
@@ -425,12 +498,12 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
                   onWinnerSelect={() => handleWinnerSelect(team.id)}
                 />
               ))
-              : currentSession.players.map((player) => (
+              : currentSession.players.filter(p => !p.eliminated).map((player) => (
                 <PlayerRow
                   key={player.id}
                   player={player}
                   isLeader={player.position === 1}
-                  isLast={player.position === currentSession.players.length}
+                  isLast={player.position === activeCount}
                   mode={isWinnerMode ? 'winner' : 'numeric'}
                   onScoreSubmit={(score) => updatePlayerScore(player.id, score)}
                   onWinnerSelect={() => handleWinnerSelect(player.id)}
@@ -443,6 +516,111 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
             }
           </AnimatePresence>
         </div>
+
+        {/* ── Seção de Eliminados ── */}
+        {isEliminationMode && eliminatedCount > 0 && (
+          <div style={{ marginTop: '20px' }}>
+            <button
+              onClick={() => setEliminatedCollapsed(c => !c)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+                background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0',
+              }}
+            >
+              <Skull style={{ width: '16px', height: '16px', color: '#64748b' }} />
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                Eliminados ({eliminatedCount})
+              </span>
+              {eliminatedCollapsed
+                ? <ChevronDown style={{ width: '14px', height: '14px', color: '#475569' }} />
+                : <ChevronUp style={{ width: '14px', height: '14px', color: '#475569' }} />}
+            </button>
+
+            <AnimatePresence>
+              {!eliminatedCollapsed && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden' }}
+                >
+                  {(isTeamMode
+                    ? (currentSession.teams ?? []).filter(t => t.eliminated)
+                    : currentSession.players.filter(p => p.eliminated)
+                  ).sort((a: any, b: any) => (b.eliminationOrder ?? 0) - (a.eliminationOrder ?? 0)).map((p: any) => (
+                    <motion.div
+                      key={p.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 0.5, x: 0 }}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '12px 16px', borderRadius: '12px',
+                        background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '11px', fontWeight: 900, color: 'rgba(255,255,255,0.4)',
+                          backgroundColor: p.color || '#475569', opacity: 0.5,
+                        }}>
+                          {(p.name || '').substring(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through' }}>
+                            {p.name}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#ef4444', fontWeight: 600 }}>
+                            💀 Eliminado na rodada {p.eliminatedAtRound}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '16px', fontWeight: 700, color: 'rgba(255,255,255,0.3)' }}>
+                          {p.totalScore ?? 0}
+                        </span>
+                        {gameConfig.allowReentry && (
+                          <button
+                            onClick={() => reinstatePlayer(p.id)}
+                            style={{
+                              padding: '6px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                              background: 'rgba(16,185,129,0.15)', color: '#34d399',
+                              fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px',
+                            }}
+                          >
+                            <Undo2 style={{ width: '12px', height: '12px' }} /> Buy-in
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
+        {/* ── Banner último sobrevivente ── */}
+        {lastOneStanding && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{
+              marginTop: '20px', padding: '18px 22px',
+              background: 'rgba(234,179,8,0.15)', border: '2px solid #eab308',
+              borderRadius: '16px', textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: '32px', marginBottom: '4px' }}>🏆</div>
+            <div style={{ fontSize: '18px', fontWeight: 900, color: '#eab308' }}>
+              {activePlayers[0] && ('name' in activePlayers[0] ? (activePlayers[0] as any).name : '')} venceu!
+            </div>
+            <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
+              Finalizando partida...
+            </div>
+          </motion.div>
+        )}
       </motion.div>
 
       {/* ── Footer fixo ── */}
@@ -452,6 +630,20 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
         background: 'linear-gradient(to top, #0f172a 60%, rgba(15,23,42,0) 100%)',
         display: 'flex', gap: '12px',
       }}>
+        {isEliminationMode && activeCount > 1 && (
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setShowEliminateSheet(true)}
+            style={{
+              width: '68px', height: '68px', borderRadius: '16px', border: 'none', cursor: 'pointer', flexShrink: 0,
+              background: 'rgba(239,68,68,0.15)', color: '#f87171',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '2px',
+            }}
+          >
+            <UserRoundX style={{ width: '22px', height: '22px' }} />
+            <span style={{ fontSize: '9px', fontWeight: 700 }}>Eliminar</span>
+          </motion.button>
+        )}
         <motion.button
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -473,6 +665,79 @@ export const ActiveGame: React.FC<ActiveGameProps> = ({ onFinish, onQuit }) => {
           {t.activeGame.finish}
         </motion.button>
       </div>
+
+      {/* ── Eliminate Sheet ── */}
+      <AnimatePresence>
+        {showEliminateSheet && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setShowEliminateSheet(false)}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
+              backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end',
+              justifyContent: 'center', zIndex: 50,
+            }}
+          >
+            <motion.div
+              initial={{ y: 300, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 300, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              style={{
+                background: '#1e293b', borderRadius: '24px 24px 0 0', width: '100%',
+                maxWidth: '500px', maxHeight: '70vh', overflow: 'auto',
+                padding: '24px 20px max(24px, env(safe-area-inset-bottom, 24px))',
+                border: '1.5px solid rgba(239,68,68,0.3)', borderBottom: 'none',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                <UserRoundX style={{ width: '24px', height: '24px', color: '#f87171' }} />
+                <span style={{ fontSize: '20px', fontWeight: 900, color: 'white' }}>Eliminar Jogador</span>
+              </div>
+              <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '16px' }}>
+                Selecione quem será eliminado da partida:
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {activePlayers.map((p: any) => (
+                  <button
+                    key={p.id}
+                    onClick={() => { eliminatePlayer(p.id); setShowEliminateSheet(false); if (navigator.vibrate) navigator.vibrate([30, 50, 80]); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '12px',
+                      padding: '14px 16px', borderRadius: '14px',
+                      background: 'rgba(239,68,68,0.08)', border: '1.5px solid rgba(239,68,68,0.2)',
+                      cursor: 'pointer', width: '100%', textAlign: 'left',
+                      transition: 'background 0.2s',
+                    }}
+                  >
+                    <div style={{
+                      width: '40px', height: '40px', borderRadius: '10px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '12px', fontWeight: 900, color: 'white',
+                      backgroundColor: p.color || '#475569',
+                    }}>
+                      {(p.name || '').substring(0, 2).toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: 'white' }}>{p.name}</div>
+                      <div style={{ fontSize: '12px', color: '#64748b' }}>{p.totalScore ?? 0} pts</div>
+                    </div>
+                    <Skull style={{ width: '18px', height: '18px', color: '#f87171' }} />
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowEliminateSheet(false)}
+                style={{
+                  marginTop: '16px', width: '100%', padding: '14px', borderRadius: '14px',
+                  background: 'rgba(71,85,105,0.4)', border: 'none', color: 'white',
+                  fontSize: '15px', fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Quit Confirm ── */}
       <AnimatePresence>

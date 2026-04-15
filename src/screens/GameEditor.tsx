@@ -79,6 +79,7 @@ export const GameEditor: React.FC<GameEditorProps> = ({ onBack }) => {
   const [winningScore, setWinningScore] = useState('');
   const [allowNegative, setAllowNegative] = useState(true);
   const [scoringMode, setScoringMode] = useState<ScoringMode>('numeric');
+  const [maxRounds, setMaxRounds] = useState('');
 
   const canCreate = name.trim().length > 0;
   const PreviewIcon = fullIconMap[selectedIcon] || Dices;
@@ -95,8 +96,9 @@ export const GameEditor: React.FC<GameEditorProps> = ({ onBack }) => {
 
   const handleCreate = () => {
     if (!canCreate) return;
+    const parsedRounds = maxRounds ? parseInt(maxRounds, 10) : undefined;
     const newGame: GameConfig = {
-      id: `custom_${Date.now()}`,
+      id: `custom_${crypto.randomUUID()}`,
       name: name.trim(),
       themeColor,
       victoryCondition,
@@ -107,6 +109,7 @@ export const GameEditor: React.FC<GameEditorProps> = ({ onBack }) => {
       icon: selectedIcon,
       imageBase64: imageBase64 ?? undefined,
       isCustom: true,
+      maxRounds: parsedRounds && parsedRounds > 0 ? parsedRounds : undefined,
     };
     addCustomGame(newGame);
     onBack();
@@ -334,7 +337,7 @@ export const GameEditor: React.FC<GameEditorProps> = ({ onBack }) => {
             </div>
 
             {/* Modo de pontuação */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid #1e293b' }}>
               <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: 500 }}>Pontuação</span>
               <div style={{ width: '160px' }}>
                 <PickerSheet
@@ -347,6 +350,22 @@ export const GameEditor: React.FC<GameEditorProps> = ({ onBack }) => {
                   themeColor={themeColor}
                 />
               </div>
+            </div>
+
+            {/* Máximo de rodadas */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px' }}>
+              <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: 500 }}>Máx. rodadas</span>
+              <input
+                type="number"
+                placeholder="Ilimitado"
+                value={maxRounds}
+                onChange={e => setMaxRounds(e.target.value)}
+                style={{
+                  width: '120px', background: '#0f172a', border: '1.5px solid #334155',
+                  borderRadius: '10px', padding: '8px 12px', fontSize: '14px',
+                  color: 'white', fontWeight: 700, outline: 'none', textAlign: 'right',
+                }}
+              />
             </div>
           </div>
         </div>

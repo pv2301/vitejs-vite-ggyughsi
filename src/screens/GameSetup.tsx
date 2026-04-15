@@ -48,6 +48,7 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
   const [editAllowNegative, setEditAllowNegative] = useState(gameConfig?.allowNegative ?? true);
   const [editScoringMode, setEditScoringMode] = useState<ScoringMode>(gameConfig?.scoringMode ?? 'numeric');
   const [rulesDirty, setRulesDirty] = useState(false);
+  const [editMaxRounds, setEditMaxRounds] = useState(gameConfig?.maxRounds?.toString() ?? '');
 
   // Timer (todos os jogos)
   const [timerEnabled, setTimerEnabled] = useState(gameConfig?.timerEnabled ?? false);
@@ -85,11 +86,13 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
 
   const saveRules = () => {
     if (!rulesDirty) return;
+    const parsedMaxRounds = editMaxRounds ? parseInt(editMaxRounds, 10) : undefined;
     updateGameOverride(gameId, {
       victoryCondition: editVictory,
       winningScore: editMeta ? parseInt(editMeta, 10) : undefined,
       allowNegative: editAllowNegative,
       scoringMode: editScoringMode,
+      maxRounds: parsedMaxRounds && parsedMaxRounds > 0 ? parsedMaxRounds : undefined,
     });
     setRulesDirty(false);
   };
@@ -111,7 +114,7 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
     if (!newTeamName.trim() || newTeamMembers.length === 0) return;
     const memberNames = newTeamMembers.map(id => savedPlayers.find(p => p.id === id)?.name ?? '');
     setTeams(prev => [...prev, {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       name: newTeamName.trim(),
       color: newTeamColor,
       memberIds: newTeamMembers,
@@ -437,7 +440,7 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
                   )}
 
                   {/* Pontuação — editável para todos os jogos */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', paddingBottom: '0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
                     <span style={{ color: '#94a3b8', fontSize: '15px' }}>{t.gameSetup.scoring}</span>
                     <div style={{ width: '160px' }}>
                       <PickerSheet
@@ -450,6 +453,18 @@ export const GameSetup: React.FC<GameSetupProps> = ({ gameId, onBack, onStartGam
                         themeColor={gameConfig.themeColor}
                       />
                     </div>
+                  </div>
+
+                  {/* Máx. Rodadas */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', paddingBottom: '0' }}>
+                    <span style={{ color: '#94a3b8', fontSize: '15px' }}>Máx. rodadas</span>
+                    <input
+                      type="number"
+                      placeholder="Ilimitado"
+                      value={editMaxRounds}
+                      onChange={e => { setEditMaxRounds(e.target.value); setRulesDirty(true); }}
+                      style={{ width: '110px', background: '#0f172a', border: '1.5px solid #334155', borderRadius: '10px', padding: '7px 12px', fontSize: '14px', color: 'white', fontWeight: 700, outline: 'none', textAlign: 'right' }}
+                    />
                   </div>
 
                   {rulesDirty && (

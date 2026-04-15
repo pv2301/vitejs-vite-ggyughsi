@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { AppState, GameSession, Player, GameConfig, Team, Tournament, UserTag, Locale } from '../types';
+import type { CuratedGame } from '../types';
 import { detectLocale } from '../i18n/translations';
 import { GAME_CONFIGS } from '../config/games';
+import { getLibraryGameId } from '../config/games-library';
 
 interface GameContextType extends AppState {
   availableGames: GameConfig[];
@@ -30,9 +32,14 @@ interface GameContextType extends AppState {
   updateUserTag: (userTag: UserTag | undefined) => void;
   undoLastScore: (participantId: string) => void;
   setLocale: (locale: Locale) => void;
+  addFromLibrary: (game: CuratedGame) => void;
+  eliminatePlayer: (participantId: string) => void;
+  reinstatePlayer: (participantId: string) => void;
 }
 
 const STORAGE_KEY = 'scoremaster_data';
+const BACKUP_KEY = 'scoremaster_backup';
+const SCHEMA_VERSION = 1;
 
 const defaultState: AppState = {
   currentSession: null,
@@ -49,6 +56,8 @@ const defaultState: AppState = {
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [corruptionDetected, setCorruptionDetected] = useState(false);
+
   const [state, setState] = useState<AppState>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -73,14 +82,40 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           })),
         };
       } catch {
+        // Primary data corrupted — try backup
+        console.warn('[ScoreMaster] Primary data corrupted, trying backup...');
+        const backup = localStorage.getItem(BACKUP_KEY);
+        if (backup) {
+          try {
+            const parsed = JSON.parse(backup);
+            console.warn('[ScoreMaster] Recovered from backup successfully.');
+            localStorage.setItem(STORAGE_KEY, backup);
+            return { ...defaultState, ...parsed };
+          } catch {
+            console.warn('[ScoreMaster] Backup also corrupted. Resetting.');
+          }
+        }
+        setCorruptionDetected(true);
         return defaultState;
       }
     }
     return defaultState;
   });
 
+  // Save state + rotating backup
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+      const json = JSON.stringify(state);
+      // Backup the previous valid state before overwriting
+      const previous = localStorage.getItem(STORAGE_KEY);
+      if (previous) {
+        localStorage.setItem(BACKUP_KEY, previous);
+      }
+      localStorage.setItem(STORAGE_KEY, json);
+    } catch (e) {
+      // localStorage unavailable (private browsing, quota exceeded) — ignore silently
+      console.warn('[ScoreMaster] Could not persist state:', e);
+    }
   }, [state]);
 
   useEffect(() => {
@@ -104,16 +139,16 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       ? normalizedOrder.map((id: string) => baseGames.find(g => g.id === id)!).filter(Boolean)
       : baseGames;
 
-  // DEBUG TEMPORÁRIO — remover depois
-  console.log('[DEBUG] gameOrder:', state.gameOrder);
-  console.log('[DEBUG] allBaseIds:', allBaseIds);
-  console.log('[DEBUG] availableGames:', availableGames.map(g => g.id));
 
   const getEffectiveConfig = (gameId: string): GameConfig | undefined =>
     availableGames.find(g => g.id === gameId);
 
   const calcPositions = (players: Player[], victoryCondition: string): Player[] => {
     const sorted = [...players].sort((a, b) => {
+      // Eliminados ficam por último, ordenados por ordem de eliminação
+      if (a.eliminated && !b.eliminated) return 1;
+      if (!a.eliminated && b.eliminated) return -1;
+      if (a.eliminated && b.eliminated) return (a.eliminationOrder ?? 0) - (b.eliminationOrder ?? 0);
       if (victoryCondition === 'lowest_score') return (a.totalScore ?? 0) - (b.totalScore ?? 0);
       return (b.totalScore ?? 0) - (a.totalScore ?? 0);
     });
@@ -122,6 +157,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const calcTeamPositions = (teams: Team[], victoryCondition: string): Team[] => {
     const sorted = [...teams].sort((a, b) => {
+      if (a.eliminated && !b.eliminated) return 1;
+      if (!a.eliminated && b.eliminated) return -1;
+      if (a.eliminated && b.eliminated) return (a.eliminationOrder ?? 0) - (b.eliminationOrder ?? 0);
       if (victoryCondition === 'lowest_score') return (a.totalScore ?? 0) - (b.totalScore ?? 0);
       return (b.totalScore ?? 0) - (a.totalScore ?? 0);
     });
@@ -130,7 +168,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const startNewSession = (gameId: string, players: Player[], teams?: Team[]) => {
     const newSession: GameSession = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       gameId,
       players: players.map(p => ({ ...p, totalScore: 0, roundScores: [], position: 1 })),
       teams: teams?.map(t => ({ ...t, totalScore: 0, roundScores: [], position: 1 })),
@@ -249,7 +287,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const createTournament = (name: string, gameId: string, playerIds: string[]) => {
     const t: Tournament = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       name,
       gameId,
       playerIds,
@@ -303,6 +341,33 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setState(prev => ({ ...prev, tournaments: prev.tournaments.filter(t => t.id !== tournamentId) }));
 
   const addCustomGame = (game: GameConfig) => setState(prev => ({ ...prev, customGames: [...prev.customGames, game] }));
+
+  /** Adiciona (ou restaura) um jogo da biblioteca curada.
+   *  Se o jogo já existir em customGames, sobrescreve com os defaults e limpa overrides. */
+  const addFromLibrary = (curatedGame: CuratedGame) => {
+    const gameId = getLibraryGameId(curatedGame.id);
+    const freshConfig: GameConfig = {
+      id: gameId,
+      name: curatedGame.name,
+      description: curatedGame.description,
+      isCustom: true,
+      ...curatedGame.config,
+    };
+    setState(prev => {
+      const exists = prev.customGames.some(g => g.id === gameId);
+      return {
+        ...prev,
+        customGames: exists
+          ? prev.customGames.map(g => g.id === gameId ? freshConfig : g)
+          : [...prev.customGames, freshConfig],
+        // Limpa overrides ao restaurar defaults da biblioteca
+        gameOverrides: exists
+          ? { ...prev.gameOverrides, [gameId]: {} }
+          : prev.gameOverrides,
+      };
+    });
+  };
+
 
   const deleteCustomGame = (gameId: string) => setState(prev => ({
     ...prev,
@@ -368,6 +433,89 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
+  // ─── Eliminação ───────────────────────────────────────────────────────────────
+  const eliminatePlayer = (participantId: string) => {
+    setState(prev => {
+      if (!prev.currentSession) return prev;
+      const gameConfig = getEffectiveConfig(prev.currentSession.gameId);
+      if (!gameConfig) return prev;
+      const isTeamMode = !!prev.currentSession.teams?.length;
+
+      if (isTeamMode) {
+        const alreadyEliminated = (prev.currentSession.teams ?? []).filter(t => t.eliminated).length;
+        const updatedTeams = (prev.currentSession.teams ?? []).map(team => {
+          if (team.id !== participantId || team.eliminated) return team;
+          return {
+            ...team,
+            eliminated: true,
+            eliminatedAtRound: prev.currentSession!.currentRound,
+            eliminationOrder: alreadyEliminated + 1,
+          };
+        });
+        return {
+          ...prev,
+          currentSession: {
+            ...prev.currentSession,
+            teams: calcTeamPositions(updatedTeams, gameConfig.victoryCondition),
+          },
+        };
+      } else {
+        const alreadyEliminated = prev.currentSession.players.filter(p => p.eliminated).length;
+        const updatedPlayers = prev.currentSession.players.map(player => {
+          if (player.id !== participantId || player.eliminated) return player;
+          return {
+            ...player,
+            eliminated: true,
+            eliminatedAtRound: prev.currentSession!.currentRound,
+            eliminationOrder: alreadyEliminated + 1,
+          };
+        });
+        return {
+          ...prev,
+          currentSession: {
+            ...prev.currentSession,
+            players: calcPositions(updatedPlayers, gameConfig.victoryCondition),
+          },
+        };
+      }
+    });
+  };
+
+  const reinstatePlayer = (participantId: string) => {
+    setState(prev => {
+      if (!prev.currentSession) return prev;
+      const gameConfig = getEffectiveConfig(prev.currentSession.gameId);
+      if (!gameConfig || !gameConfig.allowReentry) return prev;
+      const isTeamMode = !!prev.currentSession.teams?.length;
+
+      if (isTeamMode) {
+        const updatedTeams = (prev.currentSession.teams ?? []).map(team => {
+          if (team.id !== participantId) return team;
+          return { ...team, eliminated: false, eliminatedAtRound: undefined, eliminationOrder: undefined };
+        });
+        return {
+          ...prev,
+          currentSession: {
+            ...prev.currentSession,
+            teams: calcTeamPositions(updatedTeams, gameConfig.victoryCondition),
+          },
+        };
+      } else {
+        const updatedPlayers = prev.currentSession.players.map(player => {
+          if (player.id !== participantId) return player;
+          return { ...player, eliminated: false, eliminatedAtRound: undefined, eliminationOrder: undefined };
+        });
+        return {
+          ...prev,
+          currentSession: {
+            ...prev.currentSession,
+            players: calcPositions(updatedPlayers, gameConfig.victoryCondition),
+          },
+        };
+      }
+    });
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -397,6 +545,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updateUserTag,
         undoLastScore,
         setLocale,
+        addFromLibrary,
+        eliminatePlayer,
+        reinstatePlayer,
       }}
     >
       {children}

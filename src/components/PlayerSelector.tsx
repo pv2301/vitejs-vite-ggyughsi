@@ -48,7 +48,7 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
   const handleAdd = () => {
     if (!newName.trim()) return;
     onAddPlayer({
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       name: newName.trim(),
       color: selectedColor,
       avatar: selectedAvatar,

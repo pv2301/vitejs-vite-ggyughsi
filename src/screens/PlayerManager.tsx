@@ -38,7 +38,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ onBack }) => {
   const handleAdd = () => {
     if (!newName.trim()) return;
     addSavedPlayer({
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       name: newName.trim(),
       color: newColor,
       avatar: newAvatar,

@@ -1,6 +1,7 @@
 export type VictoryCondition = 'lowest_score' | 'highest_score' | 'target_score';
 export type Locale = 'en' | 'pt-BR';
 export type ScoringMode = 'numeric' | 'winner_takes_all' | 'duelo';
+export type EliminationTrigger = 'manual' | 'score_threshold';
 
 export interface GameConfig {
   id: string;
@@ -19,6 +20,32 @@ export interface GameConfig {
   timerEnabled?: boolean;
   duelPointsPerTap?: number;
   duelTimerEnabled?: boolean;
+  maxRounds?: number;       // 0 ou undefined = ilimitado
+  eliminationMode?: boolean;            // ativa mecânica de eliminação
+  allowReentry?: boolean;               // permite reentrada (buy-in)
+  eliminationTrigger?: EliminationTrigger; // 'manual' ou 'score_threshold'
+  eliminationThreshold?: number;        // elimina quando score ≤ threshold
+}
+
+export interface CuratedGame {
+  id: string;              // base id — o GameConfig terá id = `lib_${id}`
+  name: string;
+  category: string;        // agrupa variantes na biblioteca
+  description: string;
+  rulesText: string;       // regras completas (multi-linha, para exibição)
+  tags: string[];
+  playerCount: string;     // ex: "2-4 jogadores"
+  duration: string;        // ex: "30-60 min"
+  config: {
+    themeColor: string;
+    victoryCondition: VictoryCondition;
+    winningScore?: number;
+    allowNegative: boolean;
+    scoringMode: ScoringMode;
+    icon: string;
+    maxRounds?: number;
+    timerEnabled?: boolean;
+  };
 }
 
 export interface Player {
@@ -29,6 +56,9 @@ export interface Player {
   totalScore: number;
   roundScores: number[];
   position?: number;
+  eliminated?: boolean;
+  eliminatedAtRound?: number;
+  eliminationOrder?: number;  // 1 = primeiro eliminado
 }
 
 export interface Team {
@@ -40,6 +70,9 @@ export interface Team {
   totalScore: number;
   roundScores: number[];
   position?: number;
+  eliminated?: boolean;
+  eliminatedAtRound?: number;
+  eliminationOrder?: number;
 }
 
 export interface GameSession {

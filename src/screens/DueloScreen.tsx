@@ -448,7 +448,9 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(timerEnabled);
   const [flash, setFlash] = useState<Record<string, boolean>>({});
-  const [showTutorial, setShowTutorial] = useState(!localStorage.getItem(TUTORIAL_KEY));
+  const [showTutorial, setShowTutorial] = useState(() => {
+    try { return !localStorage.getItem(TUTORIAL_KEY); } catch { return true; }
+  });
   const [winnerId, setWinnerId] = useState<string | null>(null);
   const [nameOverrides, setNameOverrides] = useState<Record<string, string>>({});
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
@@ -544,7 +546,7 @@ export const DueloScreen: React.FC<DueloScreenProps> = ({ onFinish, onQuit }) =>
   };
 
   const dismissTutorial = () => {
-    localStorage.setItem(TUTORIAL_KEY, '1');
+    try { localStorage.setItem(TUTORIAL_KEY, '1'); } catch { /* ignore */ }
     setShowTutorial(false);
   };
 

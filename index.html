@@ -2,6 +2,16 @@
 <html lang="pt-BR" class="dark">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Apply saved theme before first paint to avoid flash
+      try {
+        var s = localStorage.getItem('scoremaster_data');
+        if (s) {
+          var d = JSON.parse(s);
+          if (d.darkMode === false) document.documentElement.classList.remove('dark');
+        }
+      } catch(e) {}
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="description" content="ScoreGames - Gerenciador profissional de pontuação para jogos de mesa" />
